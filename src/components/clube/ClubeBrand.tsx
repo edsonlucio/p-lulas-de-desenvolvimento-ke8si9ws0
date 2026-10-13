@@ -1,8 +1,8 @@
-import clubeLogoImg from '@/assets/logotipoesbocofonte-e-paleta-de-cores-1ba05.png'
+import clubeLogoImg from '@/assets/whatsapp-image-2026-10-13-at-09.17.39-8da8e.jpeg'
 import { cn } from '@/lib/utils'
 
 /**
- * C estilizado vetorial fiel à marca do Clube das Pílulas:
+ * C estilizado vetorial da marca do Clube das Pílulas:
  * Composto por dois arcos orgânicos sobrepostos formando a letra C aberta e dinâmica.
  */
 export function ClubeStylizedC({ className }: { className?: string }) {
@@ -29,7 +29,7 @@ export function ClubeStylizedC({ className }: { className?: string }) {
 }
 
 /**
- * Banner/Logo oficial do Clube das Pílulas com o C estilizado e wordmark
+ * Banner/Logo oficial do Clube das Pílulas com imagem oficial e wordmark
  * "CLUBE DAS PÍLULAS — uma metanoia diária"
  */
 export function ClubeBrandHeader({ className }: { className?: string }) {
@@ -41,11 +41,16 @@ export function ClubeBrandHeader({ className }: { className?: string }) {
         className,
       )}
     >
-      <div className="flex items-center gap-5 sm:gap-7 text-left">
-        <div className="flex h-20 w-20 sm:h-24 sm:w-24 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-white backdrop-blur-md ring-1 ring-white/20 shadow-inner">
-          <ClubeStylizedC className="h-14 w-14 sm:h-16 sm:w-16 text-white" />
+      <div className="flex items-center gap-5 sm:gap-7 text-left w-full md:w-auto">
+        {/* Nova imagem oficial do Clube com o C estilizado branco e tipografia sobre fundo preto */}
+        <div className="relative shrink-0 overflow-hidden rounded-2xl bg-black border border-white/10 shadow-md">
+          <img
+            src={clubeLogoImg}
+            alt="Clube das Pílulas - uma metanoia diária"
+            className="h-20 w-20 sm:h-24 sm:w-24 object-contain"
+          />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-[#6E9B1F]/30 px-3 py-0.5 text-[11px] font-bold uppercase tracking-widest text-[#A8D052] ring-1 ring-[#6E9B1F]/50">
             Comunidade & Leitura Dirigida
           </span>
@@ -56,15 +61,6 @@ export function ClubeBrandHeader({ className }: { className?: string }) {
             uma metanoia diária
           </p>
         </div>
-      </div>
-
-      {/* Mini preview do logo oficial recortado */}
-      <div className="hidden lg:block shrink-0 opacity-90 max-w-[220px]">
-        <img
-          src={clubeLogoImg}
-          alt="Clube das Pílulas"
-          className="h-20 w-auto rounded-xl object-contain brightness-110 drop-shadow-md"
-        />
       </div>
     </div>
   )
