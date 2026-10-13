@@ -21,7 +21,7 @@ import {
   Users,
   Video,
 } from 'lucide-react'
-import { ClubeBrandHeader, ClubeWatermark } from '@/components/clube/ClubeBrand'
+import { ClubeBrandHeader } from '@/components/clube/ClubeBrand'
 import { ClubeGestaoPanel } from '@/components/clube/ClubeGestaoPanel'
 import { PageIntro } from '@/components/PageIntro'
 import { UserAvatar } from '@/components/UserAvatar'
@@ -988,9 +988,6 @@ export default function Clube() {
           onSaved={() => void loadData()}
         />
       )}
-
-      {/* C estilizado extraído no canto inferior direito da página do Clube */}
-      <ClubeWatermark />
     </div>
   )
 }

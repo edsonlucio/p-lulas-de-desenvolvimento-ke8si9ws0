@@ -29,23 +29,6 @@ export function ClubeStylizedC({ className }: { className?: string }) {
 }
 
 /**
- * Marca d'água / selo do "C" estilizado no canto inferior direito da página do Clube
- */
-export function ClubeWatermark({ className }: { className?: string }) {
-  return (
-    <div
-      aria-hidden="true"
-      className={cn(
-        'pointer-events-none fixed bottom-4 right-4 z-20 select-none text-[#1F3864] opacity-25 dark:text-white dark:opacity-20 transition-opacity',
-        className,
-      )}
-    >
-      <ClubeStylizedC className="h-16 w-16 sm:h-20 sm:w-20 drop-shadow-sm" />
-    </div>
-  )
-}
-
-/**
  * Banner/Logo oficial do Clube das Pílulas com o C estilizado e wordmark
  * "CLUBE DAS PÍLULAS — uma metanoia diária"
  */

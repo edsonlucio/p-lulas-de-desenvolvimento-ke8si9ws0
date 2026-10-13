@@ -22,7 +22,6 @@ import { BrandLogo, BrandMark } from '@/components/BrandLogo'
 import { GlobalLessonSearch } from '@/components/GlobalLessonSearch'
 import { RoleBadge } from '@/components/RoleBadge'
 import { UserAvatar } from '@/components/UserAvatar'
-import { Watermark } from '@/components/Watermark'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
@@ -155,9 +154,17 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
 
 export default function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false)
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const { toast } = useToast()
   const { openNewCourse } = useCourseModal()
   const location = useLocation()
+
+  const handleHeaderLogout = () => {
+    logout()
+    navigate('/login', { replace: true })
+    toast({ title: 'Sessão encerrada', description: 'Até a próxima, sua jornada continua.' })
+  }
 
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
@@ -235,6 +242,17 @@ export default function Layout() {
               <div className="sm:hidden">
                 <UserAvatar user={user} className="h-9 w-9" />
               </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleHeaderLogout}
+                className="h-10 sm:h-11 rounded-xl border-[#1F3864]/15 bg-white px-2.5 sm:px-3.5 text-xs font-bold text-[#1F3864] shadow-sm transition hover:border-[#C0392B]/30 hover:bg-[#C0392B]/10 hover:text-[#C0392B] active:scale-[0.98]"
+                title="Sair da conta"
+                aria-label="Sair da conta"
+              >
+                <LogOut className="h-4 w-4 sm:mr-1.5 shrink-0" />
+                <span className="hidden sm:inline">Sair</span>
+              </Button>
             </div>
           </div>
         </header>
@@ -271,8 +289,6 @@ export default function Layout() {
           </footer>
         </div>
       </div>
-      {/* Marca d'água discreta do símbolo da cápsula no canto inferior direito de todas as telas autenticadas */}
-      <Watermark />
     </div>
   )
 }
