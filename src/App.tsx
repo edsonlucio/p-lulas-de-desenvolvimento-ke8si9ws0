@@ -13,6 +13,7 @@ import Duvidas from '@/pages/Duvidas'
 import Mentorias from '@/pages/Mentorias'
 import LessonDetail from '@/pages/LessonDetail'
 import Lessons from '@/pages/Lessons'
+import Clube from '@/pages/Clube'
 import NotFound from '@/pages/NotFound'
 import Settings from '@/pages/Settings'
 import ConfirmEmailChange from '@/pages/auth/ConfirmEmailChange'
@@ -46,6 +47,7 @@ export default function App() {
                 <Route index element={<Dashboard />} />
                 <Route path="/cursos" element={<Courses />} />
                 <Route path="/cursos/:id" element={<CourseDetail />} />
+                <Route path="/clube" element={<Clube />} />
                 <Route path="/aulas" element={<Lessons />} />
                 <Route path="/aulas/:id" element={<LessonDetail />} />
                 <Route path="/mentorias" element={<Mentorias />} />

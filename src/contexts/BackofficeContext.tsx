@@ -12,14 +12,20 @@ import { useRealtime } from '@/hooks/use-realtime'
 import { useAuth } from '@/contexts/AuthContext'
 import { listCourses, removeCourse, setCourseStatus } from '@/services/courses'
 import { listLessons, removeLesson } from '@/services/lessons'
+import { listUserEnrollments } from '@/services/enrollments'
+import { getUserRole } from '@/lib/roles'
 import type { Course, CourseStatus, Lesson } from '@/types/backoffice'
 
 interface BackofficeContextValue {
   courses: Course[]
   lessons: Lesson[]
   loading: boolean
+  userEnrollments: string[]
+  isEnrolledInCourse: (courseId: string) => boolean
+  canAccessCourseContent: (courseId: string) => boolean
   refreshCourses: () => Promise<void>
   refreshLessons: () => Promise<void>
+  refreshEnrollments: () => Promise<void>
   refreshAll: () => Promise<void>
   updateCourseStatus: (course: Course, status: CourseStatus) => Promise<void>
   deleteCourse: (course: Course) => Promise<void>
@@ -33,7 +39,11 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
   const [courses, setCourses] = useState<Course[]>([])
   const [lessons, setLessons] = useState<Lesson[]>([])
+  const [userEnrollments, setUserEnrollments] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+
+  const role = getUserRole(user)
+  const isPrivileged = role === 'adm' || role === 'coordenador' || role === 'professor'
 
   const refreshCourses = useCallback(async () => {
     if (!user) return
@@ -45,13 +55,46 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
     setLessons(await listLessons())
   }, [user])
 
+  const refreshEnrollments = useCallback(async () => {
+    if (!user?.id) {
+      setUserEnrollments([])
+      return
+    }
+    try {
+      const records = await listUserEnrollments(user.id)
+      setUserEnrollments(records.map((r) => r.course))
+    } catch {
+      setUserEnrollments([])
+    }
+  }, [user?.id])
+
+  const isEnrolledInCourse = useCallback(
+    (courseId: string) => {
+      return userEnrollments.includes(courseId)
+    },
+    [userEnrollments],
+  )
+
+  const canAccessCourseContent = useCallback(
+    (courseId: string) => {
+      if (isPrivileged) return true
+      return userEnrollments.includes(courseId)
+    },
+    [isPrivileged, userEnrollments],
+  )
+
   const refreshAll = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
-      const [courseRows, lessonRows] = await Promise.all([listCourses(), listLessons()])
+      const [courseRows, lessonRows, enrollRows] = await Promise.all([
+        listCourses(),
+        listLessons(),
+        listUserEnrollments(user.id).catch(() => []),
+      ])
       setCourses(courseRows)
       setLessons(lessonRows)
+      setUserEnrollments(enrollRows.map((e) => e.course))
     } finally {
       setLoading(false)
     }
@@ -62,6 +105,7 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
     else {
       setCourses([])
       setLessons([])
+      setUserEnrollments([])
       setLoading(false)
     }
   }, [user, refreshAll])
@@ -103,8 +147,12 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
       courses,
       lessons,
       loading,
+      userEnrollments,
+      isEnrolledInCourse,
+      canAccessCourseContent,
       refreshCourses,
       refreshLessons,
+      refreshEnrollments,
       refreshAll,
       updateCourseStatus,
       deleteCourse,
@@ -115,8 +163,12 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
       courses,
       lessons,
       loading,
+      userEnrollments,
+      isEnrolledInCourse,
+      canAccessCourseContent,
       refreshCourses,
       refreshLessons,
+      refreshEnrollments,
       refreshAll,
       updateCourseStatus,
       deleteCourse,

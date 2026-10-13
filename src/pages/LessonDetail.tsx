@@ -39,7 +39,7 @@ export default function LessonDetail() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { courses, lessons, loading, refreshLessons } = useBackoffice()
+  const { courses, lessons, loading, refreshLessons, canAccessCourseContent } = useBackoffice()
   const { toast } = useToast()
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -217,6 +217,45 @@ export default function LessonDetail() {
           actionLabel="Voltar para a lista de aulas"
           onAction={() => navigate('/aulas')}
         />
+      </div>
+    )
+  }
+
+  const hasCourseAccess = canAccessCourseContent(currentLesson.course)
+  if (!hasCourseAccess) {
+    return (
+      <div className="mx-auto max-w-[900px] py-12">
+        <div className="rounded-3xl border-2 border-dashed border-[#F5B041]/50 bg-[#FFFDF8] p-8 text-center shadow-[0_4px_20px_rgba(31,56,100,.06)] sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#FFF8E7] text-[#D97706] shadow-sm">
+            <span className="text-2xl font-bold">🔒</span>
+          </div>
+          <span className="mt-4 inline-block rounded-full bg-[#FFF8E7] px-4 py-1 text-xs font-bold text-[#B7791F]">
+            Conteúdo exclusivo — adquira o curso
+          </span>
+          <h2 className="mt-3 text-2xl font-bold text-[#1F3864]">Acesso bloqueado a esta aula</h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm font-medium text-[#5A6B7E] leading-relaxed">
+            Esta aula pertence a um treinamento no qual você ainda não possui matrícula ativa. Para
+            acessar vídeos, materiais didáticos e chat de dúvidas, solicite a liberação à
+            coordenação.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <Button
+              onClick={() => navigate('/cursos')}
+              variant="outline"
+              className="h-11 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864]"
+            >
+              Ver cursos disponíveis
+            </Button>
+            {course && (
+              <Button
+                onClick={() => navigate(`/cursos/${course.id}`)}
+                className="h-11 rounded-xl bg-[#1F3864] font-bold text-white hover:bg-[#172E43]"
+              >
+                Detalhes do curso
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     )
   }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import {
   BookOpen,
+  Bookmark,
   ExternalLink,
   HelpCircle,
   LayoutDashboard,
@@ -34,6 +35,7 @@ type NavItem = {
 const navigation: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard, end: true },
   { label: 'Cursos', to: '/cursos', icon: BookOpen },
+  { label: 'Clube das Pílulas', to: '/clube', icon: Bookmark },
   { label: 'Aulas', to: '/aulas', icon: PlayCircle },
   { label: 'Mentorias', to: '/mentorias', icon: UsersRound },
 ]

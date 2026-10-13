@@ -49,7 +49,9 @@ export default function CourseDetail() {
   const canManage = canManageCoursesAndLessons(user)
   const canEdit = canEditLesson(user)
 
+  const { canAccessCourseContent } = useBackoffice()
   const course = courses.find((item) => item.id === id)
+  const hasAccess = id ? canAccessCourseContent(id) : false
   const courseLessons = useMemo(
     () => lessons.filter((lesson) => lesson.course === id).sort((a, b) => a.order - b.order),
     [lessons, id],
@@ -228,7 +230,7 @@ export default function CourseDetail() {
                 </Button>
               </>
             )}
-            {courseLessons[0] && (
+            {hasAccess && courseLessons[0] && (
               <Button
                 onClick={() => navigate(`/aulas/${courseLessons[0].id}`)}
                 className="h-11 rounded-xl bg-[#1F3864] font-bold text-white hover:bg-[#172E43]"
@@ -240,112 +242,152 @@ export default function CourseDetail() {
         </div>
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7">
-        <div className="mb-5 flex items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-[#1F3864]">Grade de aulas</h2>
-            <p className="mt-1 text-sm font-medium text-[#718096]">
-              Conteúdo organizado na ordem de exibição
-            </p>
+      {!hasAccess ? (
+        <section className="rounded-3xl border-2 border-dashed border-[#F5B041]/50 bg-[#FFFDF8] p-8 text-center shadow-[0_4px_20px_rgba(31,56,100,.06)] sm:p-12">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-[#FFF8E7] text-[#D97706] shadow-sm">
+            <span className="text-2xl font-bold">🔒</span>
           </div>
-          {canManage && (
+          <span className="mt-4 inline-block rounded-full bg-[#FFF8E7] px-4 py-1 text-xs font-bold text-[#B7791F]">
+            Conteúdo exclusivo — adquira o curso
+          </span>
+          <h2 className="mt-3 text-2xl font-bold text-[#1F3864]">
+            Você ainda não possui acesso às aulas deste treinamento
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm font-medium text-[#5A6B7E] leading-relaxed">
+            Para assistir aos vídeos, baixar apostilas em PDF, slides em PPT e participar do chat de
+            dúvidas com o tutor inteligente, é necessário ter a matrícula confirmada pela
+            coordenação da Pílulas de Desenvolvimento.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Button
-              onClick={() => {
-                setEditingLesson(null)
-                setLessonDialog(true)
-              }}
+              onClick={() => navigate('/cursos')}
               variant="outline"
-              className="hidden rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] sm:flex"
+              className="h-11 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864]"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Aula
+              Voltar ao catálogo
             </Button>
-          )}
-        </div>
-        {courseLessons.length ? (
-          <div className="divide-y divide-[#EDF0EA]">
-            {courseLessons.map((lesson, index) => (
-              <div key={lesson.id} className="group flex items-center gap-3 py-4 sm:gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF0DF] text-sm font-bold text-[#6E9B1F]">
-                  {String(index + 1).padStart(2, '0')}
-                </span>
-                {lesson.thumbnail ? (
-                  <div className="hidden h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-[#1F3864] sm:block">
-                    <img
-                      src={getLessonFileUrl(lesson, lesson.thumbnail) ?? ''}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                ) : null}
-                <Link
-                  to={`/aulas/${lesson.id}`}
-                  className="min-w-0 flex-1 group-hover:text-[#6E9B1F] transition"
-                >
-                  <p className="font-bold text-[#1F3864] transition group-hover:text-[#6E9B1F]">
-                    {lesson.title}
-                  </p>
-                  <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#8290A0]">
-                    <Clock3 className="h-3.5 w-3.5" />
-                    {lesson.duration_min} minutos · Ordem {lesson.order}
-                  </p>
-                </Link>{' '}
-                <div className="flex items-center gap-1">
+            <Button
+              asChild
+              className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
+            >
+              <a
+                href="https://wa.me/5584999999999?text=Olá! Gostaria de adquirir o curso de "
+                target="_blank"
+                rel="noreferrer"
+              >
+                Falar com a equipe no WhatsApp
+              </a>
+            </Button>
+          </div>
+        </section>
+      ) : (
+        <section className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7">
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-bold text-[#1F3864]">Grade de aulas</h2>
+              <p className="mt-1 text-sm font-medium text-[#718096]">
+                Conteúdo organizado na ordem de exibição
+              </p>
+            </div>
+            {canManage && (
+              <Button
+                onClick={() => {
+                  setEditingLesson(null)
+                  setLessonDialog(true)
+                }}
+                variant="outline"
+                className="hidden rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] sm:flex"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Nova Aula
+              </Button>
+            )}
+          </div>
+          {courseLessons.length ? (
+            <div className="divide-y divide-[#EDF0EA]">
+              {courseLessons.map((lesson, index) => (
+                <div key={lesson.id} className="group flex items-center gap-3 py-4 sm:gap-4">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF0DF] text-sm font-bold text-[#6E9B1F]">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  {lesson.thumbnail ? (
+                    <div className="hidden h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-[#1F3864] sm:block">
+                      <img
+                        src={getLessonFileUrl(lesson, lesson.thumbnail) ?? ''}
+                        alt=""
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : null}
                   <Link
                     to={`/aulas/${lesson.id}`}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 text-xs font-bold text-[#1F3864] transition hover:bg-[#EAF0DF] hover:text-[#6E9B1F]"
+                    className="min-w-0 flex-1 group-hover:text-[#6E9B1F] transition"
                   >
-                    Assistir
-                  </Link>
-                  {canEdit && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => {
-                        setEditingLesson(lesson)
-                        setLessonDialog(true)
-                      }}
-                      className="rounded-xl text-[#44546A]"
-                      aria-label="Editar aula"
+                    <p className="font-bold text-[#1F3864] transition group-hover:text-[#6E9B1F]">
+                      {lesson.title}
+                    </p>
+                    <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#8290A0]">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      {lesson.duration_min} minutos · Ordem {lesson.order}
+                    </p>
+                  </Link>{' '}
+                  <div className="flex items-center gap-1">
+                    <Link
+                      to={`/aulas/${lesson.id}`}
+                      className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 text-xs font-bold text-[#1F3864] transition hover:bg-[#EAF0DF] hover:text-[#6E9B1F]"
                     >
-                      <Edit3 className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {canManage && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setDeletingLesson(lesson)}
-                      className="rounded-xl text-[#C0392B] hover:bg-[#C0392B]/10 hover:text-[#C0392B]"
-                      aria-label="Excluir aula"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                      Assistir
+                    </Link>
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setEditingLesson(lesson)
+                          setLessonDialog(true)
+                        }}
+                        className="rounded-xl text-[#44546A]"
+                        aria-label="Editar aula"
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {canManage && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setDeletingLesson(lesson)}
+                        className="rounded-xl text-[#C0392B] hover:bg-[#C0392B]/10 hover:text-[#C0392B]"
+                        aria-label="Excluir aula"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <EmptyState
-            title="Este curso ainda não tem aulas"
-            description={
-              canManage
-                ? 'Crie a primeira aula para montar a jornada de aprendizagem.'
-                : 'Ainda não há aulas publicadas para este curso.'
-            }
-            actionLabel={canManage ? 'Nova Aula' : undefined}
-            onAction={
-              canManage
-                ? () => {
-                    setEditingLesson(null)
-                    setLessonDialog(true)
-                  }
-                : undefined
-            }
-          />
-        )}
-      </section>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              title="Este curso ainda não tem aulas"
+              description={
+                canManage
+                  ? 'Crie a primeira aula para montar a jornada de aprendizagem.'
+                  : 'Ainda não há aulas publicadas para este curso.'
+              }
+              actionLabel={canManage ? 'Nova Aula' : undefined}
+              onAction={
+                canManage
+                  ? () => {
+                      setEditingLesson(null)
+                      setLessonDialog(true)
+                    }
+                  : undefined
+              }
+            />
+          )}
+        </section>
+      )}
 
       <LessonFormDialog
         open={lessonDialog}

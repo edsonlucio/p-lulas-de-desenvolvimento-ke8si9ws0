@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { BookOpen, Search, UsersRound } from 'lucide-react'
+import { BookOpen, Lock, Search, UsersRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog'
@@ -23,7 +23,14 @@ export default function Courses() {
   const [deleting, setDeleting] = useState<Course | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const { user } = useAuth()
-  const { courses, loading, lessonCount, updateCourseStatus, deleteCourse } = useBackoffice()
+  const {
+    courses,
+    loading,
+    lessonCount,
+    updateCourseStatus,
+    deleteCourse,
+    canAccessCourseContent,
+  } = useBackoffice()
   const { openNewCourse, openEditCourse } = useCourseModal()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -110,6 +117,7 @@ export default function Courses() {
             {filtered.map((course, index) => {
               const cover = getCourseCoverUrl(course)
               const count = lessonCount(course.id)
+              const hasAccess = canAccessCourseContent(course.id)
               return (
                 <div
                   key={course.id}
@@ -118,17 +126,33 @@ export default function Courses() {
                   className="animate-fade-in-up cursor-pointer px-4 py-4 opacity-0 transition [animation-fill-mode:forwards] hover:bg-[#F9FAF8] md:grid md:grid-cols-[minmax(330px,1.8fr)_110px_100px_120px_50px] md:items-center md:gap-4 md:px-5"
                 >
                   <div className="flex min-w-0 items-center gap-4">
-                    <div className="h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#1F3864] to-[#1E3A12]">
+                    <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-gradient-to-br from-[#1F3864] to-[#1E3A12]">
                       {cover ? (
-                        <img src={cover} alt="" className="h-full w-full object-cover" />
+                        <img
+                          src={cover}
+                          alt=""
+                          className={`h-full w-full object-cover ${!hasAccess ? 'brightness-50 grayscale-[30%]' : ''}`}
+                        />
                       ) : (
                         <div className="flex h-full items-center justify-center text-2xl font-bold text-white">
                           P.
                         </div>
                       )}
+                      {!hasAccess && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                          <Lock className="h-5 w-5 text-[#F5B041]" />
+                        </div>
+                      )}
                     </div>
                     <div className="min-w-0">
-                      <h3 className="truncate font-bold text-[#1F3864]">{course.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="truncate font-bold text-[#1F3864]">{course.title}</h3>
+                        {!hasAccess && (
+                          <span className="shrink-0 rounded-full bg-[#FFF8E7] px-2 py-0.5 text-[10px] font-bold text-[#B7791F] border border-[#F5B041]/40">
+                            Bloqueado
+                          </span>
+                        )}
+                      </div>
                       <p className="mt-1 line-clamp-1 text-xs font-medium text-[#718096]">
                         {course.description}
                       </p>

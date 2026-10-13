@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import {
   Camera,
   CheckCircle2,
@@ -34,7 +34,24 @@ import { canManageUsers, ROLE_LABELS, getUserRole } from '@/lib/roles'
 import { getPortugueseError, getPortugueseFieldErrors } from '@/lib/pocketbase/translated-errors'
 import { requestEmailChange } from '@/services/auth'
 import type { UserRecord, UserRole } from '@/types/backoffice'
-import { UsersRound, Shield } from 'lucide-react'
+import { UsersRound, Shield, CreditCard, Plus, Trash2, Search, GraduationCap } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { useBackoffice } from '@/contexts/BackofficeContext'
+import {
+  cancelEnrollment,
+  deleteEnrollment,
+  enrollStudent,
+  listEnrollments,
+  reactivateEnrollment,
+} from '@/services/enrollments'
+import type { Enrollment } from '@/types/backoffice'
 
 const values = [
   'Clareza e Simplicidade',
@@ -98,6 +115,17 @@ export default function Settings() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [updatingUserRole, setUpdatingUserRole] = useState<string | null>(null)
 
+  // Gestão de Matrículas
+  const { courses, refreshEnrollments } = useBackoffice()
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([])
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false)
+  const [enrollModalOpen, setEnrollModalOpen] = useState(false)
+  const [selectedStudentId, setSelectedStudentId] = useState('')
+  const [selectedCourseId, setSelectedCourseId] = useState('')
+  const [enrollPurchaseDate, setEnrollPurchaseDate] = useState('')
+  const [enrolling, setEnrolling] = useState(false)
+  const [searchEnrollment, setSearchEnrollment] = useState('')
+
   const isManager = canManageUsers(user)
   const currentUserRole = getUserRole(user)
 
@@ -125,6 +153,113 @@ export default function Settings() {
       active = false
     }
   }, [isManager])
+
+  const loadEnrollments = useCallback(async () => {
+    if (!isManager) return
+    setLoadingEnrollments(true)
+    try {
+      const data = await listEnrollments()
+      setEnrollments(data)
+    } catch (err) {
+      console.error('Falha ao carregar matrículas:', err)
+    } finally {
+      setLoadingEnrollments(false)
+    }
+  }, [isManager])
+
+  useEffect(() => {
+    if (isManager) void loadEnrollments()
+  }, [isManager, loadEnrollments])
+
+  const handleEnrollStudent = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!selectedStudentId || !selectedCourseId) {
+      toast({
+        variant: 'destructive',
+        title: 'Selecione aluno e curso',
+        description: 'Ambos os campos são obrigatórios para matricular.',
+      })
+      return
+    }
+
+    setEnrolling(true)
+    try {
+      await enrollStudent({
+        userId: selectedStudentId,
+        courseId: selectedCourseId,
+        purchasedAt: enrollPurchaseDate
+          ? new Date(enrollPurchaseDate).toISOString()
+          : new Date().toISOString(),
+      })
+      toast({
+        title: 'Matrícula efetuada com sucesso!',
+        description: 'O aluno agora possui acesso irrestrito às aulas e materiais do curso.',
+      })
+      setSelectedStudentId('')
+      setSelectedCourseId('')
+      setEnrollPurchaseDate('')
+      setEnrollModalOpen(false)
+      void loadEnrollments()
+      void refreshEnrollments()
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao matricular',
+        description: getPortugueseError(err),
+      })
+    } finally {
+      setEnrolling(false)
+    }
+  }
+
+  const handleToggleEnrollmentStatus = async (enroll: Enrollment) => {
+    try {
+      if (enroll.status === 'ativo') {
+        await cancelEnrollment(enroll.id)
+        toast({ title: 'Acesso suspenso para este curso' })
+      } else {
+        await reactivateEnrollment(enroll.id)
+        toast({ title: 'Matrícula reativada com sucesso' })
+      }
+      void loadEnrollments()
+      void refreshEnrollments()
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao atualizar matrícula',
+        description: getPortugueseError(err),
+      })
+    }
+  }
+
+  const handleDeleteEnrollment = async (enrollId: string) => {
+    if (!window.confirm('Deseja excluir esta matrícula definitivamente?')) return
+    try {
+      await deleteEnrollment(enrollId)
+      setEnrollments((prev) => prev.filter((e) => e.id !== enrollId))
+      void refreshEnrollments()
+      toast({ title: 'Matrícula removida' })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao excluir matrícula',
+        description: getPortugueseError(err),
+      })
+    }
+  }
+
+  const filteredEnrollments = useMemo(() => {
+    if (!searchEnrollment.trim()) return enrollments
+    const query = searchEnrollment.toLowerCase()
+    return enrollments.filter((e) => {
+      const studentName = e.expand?.user?.name?.toLowerCase() || ''
+      const studentEmail = e.expand?.user?.email?.toLowerCase() || ''
+      const courseTitle = e.expand?.course?.title?.toLowerCase() || ''
+      return (
+        studentName.includes(query) || studentEmail.includes(query) || courseTitle.includes(query)
+      )
+    })
+  }, [enrollments, searchEnrollment])
 
   const handleRoleChange = async (targetUserId: string, newRole: UserRole) => {
     setUpdatingUserRole(targetUserId)
@@ -491,85 +626,195 @@ export default function Settings() {
           </form>
 
           {isManager && (
-            <div className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7">
-              <div className="mb-5 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F3864]/10 text-[#1F3864]">
-                    <Shield className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <h2 className="text-lg font-bold text-[#1F3864]">
-                      Gerenciamento de Perfis de Usuário
-                    </h2>
-                    <p className="text-xs font-medium text-[#718096]">
-                      Hierarquia de acesso: Adm &gt; Coordenador &gt; Professor &gt; Aluno
-                    </p>
+            <>
+              {/* GESTÃO DE PERFIS DE USUÁRIO */}
+              <div className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F3864]/10 text-[#1F3864]">
+                      <Shield className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-lg font-bold text-[#1F3864]">
+                        Gerenciamento de Perfis de Usuário
+                      </h2>
+                      <p className="text-xs font-medium text-[#718096]">
+                        Hierarquia de acesso: Adm &gt; Coordenador &gt; Professor &gt; Aluno
+                      </p>
+                    </div>
                   </div>
+                  <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 py-1.5 text-xs font-bold text-[#1F3864]">
+                    <UsersRound className="h-4 w-4 text-[#6E9B1F]" />
+                    {usersList.length} usuários
+                  </span>
                 </div>
-                <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 py-1.5 text-xs font-bold text-[#1F3864]">
-                  <UsersRound className="h-4 w-4 text-[#6E9B1F]" />
-                  {usersList.length} usuários
-                </span>
-              </div>
 
-              {loadingUsers ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-[#6E9B1F]" />
-                </div>
-              ) : (
-                <div className="divide-y divide-[#EDF0EA]">
-                  {usersList.map((targetUser) => {
-                    const targetRole = getUserRole(targetUser)
-                    const isSelf = targetUser.id === user?.id
-                    return (
-                      <div
-                        key={targetUser.id}
-                        className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <UserAvatar user={targetUser} className="h-10 w-10 shrink-0" />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <p className="truncate text-sm font-bold text-[#1F3864]">
-                                {targetUser.name || 'Sem nome'}
+                {loadingUsers ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#6E9B1F]" />
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#EDF0EA]">
+                    {usersList.map((targetUser) => {
+                      const targetRole = getUserRole(targetUser)
+                      const isSelf = targetUser.id === user?.id
+                      return (
+                        <div
+                          key={targetUser.id}
+                          className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <UserAvatar user={targetUser} className="h-10 w-10 shrink-0" />
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-bold text-[#1F3864]">
+                                  {targetUser.name || 'Sem nome'}
+                                </p>
+                                {isSelf && (
+                                  <span className="rounded bg-[#6E9B1F]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#527915]">
+                                    Você
+                                  </span>
+                                )}
+                              </div>
+                              <p className="truncate text-xs font-medium text-[#718096]">
+                                {targetUser.email}
                               </p>
-                              {isSelf && (
-                                <span className="rounded bg-[#6E9B1F]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#527915]">
-                                  Você
-                                </span>
-                              )}
                             </div>
-                            <p className="truncate text-xs font-medium text-[#718096]">
-                              {targetUser.email}
-                            </p>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Select
+                              value={targetRole}
+                              disabled={updatingUserRole === targetUser.id}
+                              onValueChange={(val) =>
+                                handleRoleChange(targetUser.id, val as UserRole)
+                              }
+                            >
+                              <SelectTrigger className="h-10 w-36 rounded-xl border-[#D9D9D9] font-semibold text-xs focus:ring-[#6E9B1F]">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="font-quicksand">
+                                <SelectItem value="adm">Adm</SelectItem>
+                                <SelectItem value="coordenador">Coordenador</SelectItem>
+                                <SelectItem value="professor">Professor</SelectItem>
+                                <SelectItem value="aluno">Aluno</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <RoleBadge role={targetRole} size="sm" />
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Select
-                            value={targetRole}
-                            disabled={updatingUserRole === targetUser.id}
-                            onValueChange={(val) =>
-                              handleRoleChange(targetUser.id, val as UserRole)
-                            }
-                          >
-                            <SelectTrigger className="h-10 w-36 rounded-xl border-[#D9D9D9] font-semibold text-xs focus:ring-[#6E9B1F]">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="font-quicksand">
-                              <SelectItem value="adm">Adm</SelectItem>
-                              <SelectItem value="coordenador">Coordenador</SelectItem>
-                              <SelectItem value="professor">Professor</SelectItem>
-                              <SelectItem value="aluno">Aluno</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <RoleBadge role={targetRole} size="sm" />
-                        </div>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* GESTÃO DE MATRÍCULAS E COMPRA DE CURSOS */}
+              <div className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7">
+                <div className="mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#6E9B1F]/15 text-[#6E9B1F]">
+                      <CreditCard className="h-5 w-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-lg font-bold text-[#1F3864]">
+                        Matrículas e Acesso a Cursos
+                      </h2>
+                      <p className="text-xs font-medium text-[#718096]">
+                        Alunos só visualizam aulas de treinamentos comprados/matriculados.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={() => setEnrollModalOpen(true)}
+                    className="h-10 rounded-xl bg-[#6E9B1F] px-4 font-bold text-white shadow-sm hover:bg-[#5C8619]"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Nova Matrícula
+                  </Button>
                 </div>
-              )}
-            </div>
+
+                {/* Busca de Matrícula */}
+                <div className="mb-4 relative">
+                  <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-[#718096]" />
+                  <Input
+                    value={searchEnrollment}
+                    onChange={(e) => setSearchEnrollment(e.target.value)}
+                    placeholder="Filtrar por aluno ou treinamento..."
+                    className="h-10 rounded-xl border-[#D9D9D9] pl-10 text-xs font-medium focus-visible:ring-[#6E9B1F]"
+                  />
+                </div>
+
+                {loadingEnrollments ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-[#6E9B1F]" />
+                  </div>
+                ) : filteredEnrollments.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-[#CBD3C3] p-6 text-center">
+                    <GraduationCap className="mx-auto h-8 w-8 text-[#718096]/50 mb-1.5" />
+                    <p className="text-sm font-bold text-[#1F3864]">Nenhuma matrícula cadastrada</p>
+                    <p className="text-xs text-[#718096] mt-0.5">
+                      Clique no botão acima para vincular um aluno a um curso.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="divide-y divide-[#EDF0EA]">
+                    {filteredEnrollments.map((enr) => {
+                      const isAtivo = enr.status === 'ativo'
+                      return (
+                        <div
+                          key={enr.id}
+                          className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <UserAvatar
+                              user={enr.expand?.user ?? null}
+                              className="h-9 w-9 shrink-0 text-xs"
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-bold text-[#1F3864]">
+                                {enr.expand?.user?.name || enr.expand?.user?.email || 'Aluno'}
+                              </p>
+                              <p className="truncate text-xs font-medium text-[#6E9B1F]">
+                                Curso: {enr.expand?.course?.title || 'Treinamento'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                                isAtivo
+                                  ? 'bg-[#EAF0DF] text-[#527915]'
+                                  : 'bg-[#FDEDEC] text-[#C0392B]'
+                              }`}
+                            >
+                              {isAtivo ? 'Acesso Ativo' : 'Cancelado'}
+                            </span>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => void handleToggleEnrollmentStatus(enr)}
+                              className="h-8 rounded-xl text-xs font-bold text-[#1F3864]"
+                            >
+                              {isAtivo ? 'Suspender' : 'Reativar'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => void handleDeleteEnrollment(enr.id)}
+                              className="h-8 w-8 rounded-xl p-0 text-[#C0392B] hover:bg-[#C0392B]/10"
+                              title="Excluir matrícula"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
 
@@ -616,6 +861,86 @@ export default function Settings() {
           </ul>
         </aside>
       </div>
+
+      {/* MODAL DE MATRÍCULA */}
+      <Dialog open={enrollModalOpen} onOpenChange={setEnrollModalOpen}>
+        <DialogContent className="rounded-3xl sm:max-w-md font-quicksand">
+          <form onSubmit={handleEnrollStudent} className="space-y-4">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-bold text-[#1F3864] flex items-center gap-2">
+                <GraduationCap className="h-5 w-5 text-[#6E9B1F]" />
+                Matricular Aluno em Curso
+              </DialogTitle>
+              <DialogDescription className="text-xs font-medium text-[#718096]">
+                Libere o acesso ao conteúdo do treinamento para o aluno comprador.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#1F3864]">Selecionar Aluno *</Label>
+              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+                <SelectTrigger className="h-11 rounded-xl font-semibold">
+                  <SelectValue placeholder="Escolha um usuário..." />
+                </SelectTrigger>
+                <SelectContent className="font-quicksand max-h-60">
+                  {usersList.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name || u.email} ({u.email})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#1F3864]">Curso Adquirido *</Label>
+              <Select value={selectedCourseId} onValueChange={setSelectedCourseId}>
+                <SelectTrigger className="h-11 rounded-xl font-semibold">
+                  <SelectValue placeholder="Escolha um curso..." />
+                </SelectTrigger>
+                <SelectContent className="font-quicksand max-h-60">
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-[#1F3864]">
+                Data da Compra / Confirmação
+              </Label>
+              <Input
+                type="date"
+                value={enrollPurchaseDate}
+                onChange={(e) => setEnrollPurchaseDate(e.target.value)}
+                className="h-11 rounded-xl"
+              />
+            </div>
+
+            <DialogFooter className="mt-4 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setEnrollModalOpen(false)}
+                className="rounded-xl font-bold"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                disabled={enrolling}
+                className="rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
+              >
+                {enrolling ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                Confirmar Matrícula
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

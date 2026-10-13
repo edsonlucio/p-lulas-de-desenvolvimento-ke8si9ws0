@@ -24,7 +24,13 @@ import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { getUserRole } from '@/lib/roles'
 import { cn } from '@/lib/utils'
-import { listMentorships, removeMentorship, updateMentorship } from '@/services/mentorships'
+import {
+  getMentorshipMaterialUrl,
+  listMentorships,
+  removeMentorship,
+  updateMentorship,
+} from '@/services/mentorships'
+import { FileText, Download, BookMarked } from 'lucide-react'
 import type { Mentorship, MentorshipStatus } from '@/types/backoffice'
 
 const STATUS_STYLES: Record<MentorshipStatus, { label: string; classes: string; dot: string }> = {
@@ -83,7 +89,7 @@ export default function Mentorias() {
   const { user } = useAuth()
   const { toast } = useToast()
   const role = getUserRole(user)
-  const canManage = role === 'adm' || role === 'coordenador'
+  const canManage = role === 'adm' || role === 'coordenador' || role === 'professor'
 
   const [mentorships, setMentorships] = useState<Mentorship[]>([])
   const [loading, setLoading] = useState(true)
@@ -265,6 +271,32 @@ export default function Mentorias() {
                           <span className="line-clamp-2">{mentorship.notes}</span>
                         </p>
                       ) : null}
+                      {/* Materiais de estudo anexados à mentoria */}
+                      {(mentorship.study_material || mentorship.study_material_file) && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-[#F8F9F7] p-2 border border-[#EDF0EA]">
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#6E9B1F]">
+                            <BookMarked className="h-3.5 w-3.5" />
+                            Material de Estudo:
+                          </span>
+                          {mentorship.study_material && (
+                            <span className="text-xs font-medium text-[#1F3864]">
+                              {mentorship.study_material}
+                            </span>
+                          )}
+                          {mentorship.study_material_file && (
+                            <a
+                              href={getMentorshipMaterialUrl(mentorship) ?? '#'}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#EAF0DF] px-2 py-0.5 text-[11px] font-bold text-[#527915] hover:bg-[#d8e4c5]"
+                            >
+                              <FileText className="h-3 w-3" />
+                              Baixar anexo
+                              <Download className="h-3 w-3 ml-0.5" />
+                            </a>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap items-center gap-3 md:mt-0 md:contents">

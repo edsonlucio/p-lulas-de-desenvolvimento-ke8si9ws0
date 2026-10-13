@@ -26,7 +26,7 @@ import type { Lesson } from '@/types/backoffice'
 
 export default function Lessons() {
   const { user } = useAuth()
-  const { courses, lessons, loading, deleteLesson } = useBackoffice()
+  const { courses, lessons, loading, deleteLesson, canAccessCourseContent } = useBackoffice()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
   const [courseFilter, setCourseFilter] = useState('todos')
@@ -173,10 +173,23 @@ export default function Lessons() {
                     <div className="flex items-center gap-1">
                       <Link
                         to={`/aulas/${lesson.id}`}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 text-xs font-bold text-[#1F3864] transition hover:bg-[#EAF0DF] hover:text-[#6E9B1F]"
+                        className={`inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-bold transition ${
+                          canAccessCourseContent(lesson.course)
+                            ? 'bg-[#F4F5F3] text-[#1F3864] hover:bg-[#EAF0DF] hover:text-[#6E9B1F]'
+                            : 'bg-[#FFF8E7] text-[#B7791F] border border-[#F5B041]/40'
+                        }`}
                       >
-                        <PlayCircle className="h-4 w-4 text-[#6E9B1F]" />
-                        <span className="hidden sm:inline">Assistir aula</span>
+                        {canAccessCourseContent(lesson.course) ? (
+                          <>
+                            <PlayCircle className="h-4 w-4 text-[#6E9B1F]" />
+                            <span className="hidden sm:inline">Assistir aula</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs">🔒</span>
+                            <span className="hidden sm:inline">Bloqueada</span>
+                          </>
+                        )}
                       </Link>
                       {canEdit && (
                         <Button

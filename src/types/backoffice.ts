@@ -80,10 +80,14 @@ export interface Mentorship extends RecordModel {
   status: MentorshipStatus
   meeting_link?: string
   notes?: string
+  study_material?: string
+  study_material_file?: string
+  course?: string
   created: string
   updated: string
   expand?: {
     student?: UserRecord
+    course?: Course
   }
 }
 
@@ -94,6 +98,78 @@ export interface MentorshipInput {
   status: MentorshipStatus
   meetingLink?: string
   notes?: string
+  studyMaterial?: string
+  studyMaterialFile?: File | null
+  removeStudyMaterialFile?: boolean
+  course?: string
+}
+
+export type ClubePostType = 'pergunta' | 'resumo' | 'provocacao'
+
+export interface ClubeBook extends RecordModel {
+  title: string
+  author: string
+  month: string
+  description?: string
+  cover?: string
+  status: 'ativo' | 'inativo'
+  created: string
+  updated: string
+}
+
+export interface ClubeDailyPost extends RecordModel {
+  book: string
+  date: string
+  type: ClubePostType
+  title: string
+  content: string
+  pages_range?: string
+  order?: number
+  created: string
+  updated: string
+  expand?: {
+    book?: ClubeBook
+  }
+}
+
+export interface ClubeMeeting extends RecordModel {
+  book?: string
+  date: string
+  title: string
+  description?: string
+  meeting_link?: string
+  status: 'agendado' | 'realizado' | 'cancelado'
+  created: string
+  updated: string
+  expand?: {
+    book?: ClubeBook
+  }
+}
+
+export interface ClubeComment extends RecordModel {
+  post: string
+  author: string
+  text: string
+  created: string
+  updated: string
+  expand?: {
+    author?: UserRecord
+  }
+}
+
+export type EnrollmentStatus = 'ativo' | 'cancelado'
+
+export interface Enrollment extends RecordModel {
+  user: string
+  course: string
+  status: EnrollmentStatus
+  purchased_at?: string
+  created: string
+  updated: string
+  expand?: {
+    user?: UserRecord
+    course?: Course
+  }
 }
 
 export interface CourseInput {

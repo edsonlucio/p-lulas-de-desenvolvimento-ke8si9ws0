@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T02:43:17.916Z",
+  "generatedAt": "2026-10-13T02:55:24.457Z",
   "collections": [
     {
       "name": "users",
@@ -415,12 +415,352 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "study_material",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "study_material_file",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "course",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "courses"
         }
       ],
       "indexes": [
         "CREATE INDEX idx_mentorships_student ON mentorships (student)",
         "CREATE INDEX idx_mentorships_status ON mentorships (status)",
         "CREATE INDEX idx_mentorships_scheduled ON mentorships (scheduled_at)"
+      ]
+    },
+    {
+      "name": "clube_books",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "author",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "month",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "cover",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["ativo", "inativo"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_clube_books_status ON clube_books (status)",
+        "CREATE INDEX idx_clube_books_month ON clube_books (month)"
+      ]
+    },
+    {
+      "name": "clube_daily_posts",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "book",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "clube_books"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["pergunta", "resumo", "provocacao"]
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "content",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "pages_range",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "order",
+          "type": "number",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_clube_daily_book_date ON clube_daily_posts (book, date)",
+        "CREATE INDEX idx_clube_daily_type ON clube_daily_posts (type)"
+      ]
+    },
+    {
+      "name": "clube_meetings",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "book",
+          "type": "relation",
+          "required": false,
+          "system": false,
+          "collectionRef": "clube_books"
+        },
+        {
+          "name": "date",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "meeting_link",
+          "type": "url",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["agendado", "realizado", "cancelado"]
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_clube_meetings_date ON clube_meetings (date)",
+        "CREATE INDEX idx_clube_meetings_status ON clube_meetings (status)"
+      ]
+    },
+    {
+      "name": "clube_comments",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != ''",
+        "view": "@request.auth.id != ''",
+        "create": "@request.auth.id != '' && @request.body.author = @request.auth.id",
+        "update": "@request.auth.id != '' && (author = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (author = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "post",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "clube_daily_posts"
+        },
+        {
+          "name": "author",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "text",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_clube_comments_post ON clube_comments (post)",
+        "CREATE INDEX idx_clube_comments_author ON clube_comments (author)"
+      ]
+    },
+    {
+      "name": "enrollments",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "create": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "course",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "courses"
+        },
+        {
+          "name": "status",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["ativo", "cancelado"]
+        },
+        {
+          "name": "purchased_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_enrollments_user_course ON enrollments (user, course)",
+        "CREATE INDEX idx_enrollments_status ON enrollments (status)"
       ]
     }
   ]

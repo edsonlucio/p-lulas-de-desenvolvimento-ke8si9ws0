@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent } from 'react'
-import { GraduationCap, Loader2, Users } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { GraduationCap, Loader2, Users, FileText, UploadCloud, X } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -22,6 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { createMentorship, listStudents, updateMentorship } from '@/services/mentorships'
+import { useBackoffice } from '@/contexts/BackofficeContext'
 import type { Mentorship, MentorshipStatus, UserRecord } from '@/types/backoffice'
 
 function toLocalInputValue(value?: string): string {
@@ -51,6 +52,12 @@ export function MentorshipFormDialog({
   const [status, setStatus] = useState<MentorshipStatus>('agendada')
   const [meetingLink, setMeetingLink] = useState('')
   const [notes, setNotes] = useState('')
+  const [course, setCourse] = useState('')
+  const [studyMaterial, setStudyMaterial] = useState('')
+  const [studyMaterialFile, setStudyMaterialFile] = useState<File | null>(null)
+  const [removeFile, setRemoveFile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { courses } = useBackoffice()
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loadingStudents, setLoadingStudents] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -64,6 +71,10 @@ export function MentorshipFormDialog({
     setStatus(mentorship?.status ?? 'agendada')
     setMeetingLink(mentorship?.meeting_link ?? '')
     setNotes(mentorship?.notes ?? '')
+    setCourse(mentorship?.course ?? '')
+    setStudyMaterial(mentorship?.study_material ?? '')
+    setStudyMaterialFile(null)
+    setRemoveFile(false)
     setErrors({})
   }, [open, mentorship])
 
@@ -104,6 +115,10 @@ export function MentorshipFormDialog({
         status,
         meetingLink,
         notes,
+        course: course || undefined,
+        studyMaterial,
+        studyMaterialFile,
+        removeStudyMaterialFile: removeFile,
       }
       if (mentorship) {
         await updateMentorship(mentorship.id, payload)
@@ -237,17 +252,103 @@ export function MentorshipFormDialog({
             </div>
 
             <div className="space-y-2">
+              <Label className="font-bold text-[#1F3864]">Curso Relacionado (opcional)</Label>
+              <Select value={course} onValueChange={setCourse}>
+                <SelectTrigger className="h-12 rounded-xl border-[#D9D9D9] font-semibold focus:ring-[#6E9B1F]">
+                  <SelectValue placeholder="Selecione um curso (opcional)" />
+                </SelectTrigger>
+                <SelectContent className="font-quicksand">
+                  <SelectItem value="none">Nenhum curso vinculado</SelectItem>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="mentorship-notes" className="font-bold text-[#1F3864]">
                 Observações (opcional)
               </Label>
               <textarea
                 id="mentorship-notes"
-                rows={3}
+                rows={2}
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="Contexto, objetivos ou combinados da sessão..."
                 className="w-full rounded-xl border border-[#D9D9D9] p-3 text-sm font-medium text-[#1F3864] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E9B1F]"
               />
+            </div>
+
+            <div className="space-y-2 rounded-xl bg-[#F8F9F7] p-3 border border-[#EDF0EA]">
+              <Label
+                htmlFor="mentorship-material"
+                className="font-bold text-[#1F3864] text-xs uppercase tracking-wide"
+              >
+                Material de Estudo da Mentoria (para o aluno)
+              </Label>
+              <Input
+                id="mentorship-material"
+                value={studyMaterial}
+                onChange={(event) => setStudyMaterial(event.target.value)}
+                placeholder="Ex.: Artigo de Leitura Dirigida, Link de Drive ou Guia de Ação"
+                className="h-11 rounded-xl border-[#D9D9D9] bg-white text-xs font-medium focus-visible:ring-[#6E9B1F]"
+              />
+              <div className="mt-2 flex items-center gap-3">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.ppt,.pptx,.doc,.docx"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setStudyMaterialFile(file)
+                      setRemoveFile(false)
+                    }
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-9 rounded-lg border-[#D9D9D9] bg-white text-xs font-bold text-[#1F3864]"
+                >
+                  <UploadCloud className="mr-1.5 h-3.5 w-3.5 text-[#6E9B1F]" />
+                  {studyMaterialFile ? 'Trocar arquivo' : 'Anexar PDF / PPT'}
+                </Button>
+                {studyMaterialFile && (
+                  <span className="flex items-center gap-1 text-xs font-semibold text-[#1F3864] truncate max-w-[200px]">
+                    <FileText className="h-3.5 w-3.5 text-[#6E9B1F]" />
+                    {studyMaterialFile.name}
+                    <button
+                      type="button"
+                      onClick={() => setStudyMaterialFile(null)}
+                      className="ml-1 text-[#C0392B]"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                )}
+                {!studyMaterialFile && mentorship?.study_material_file && !removeFile && (
+                  <span className="flex items-center gap-1 text-xs font-medium text-[#5A6B7E]">
+                    Arquivo anexado
+                    <button
+                      type="button"
+                      onClick={() => setRemoveFile(true)}
+                      className="ml-1 text-xs text-[#C0392B] hover:underline"
+                    >
+                      (remover)
+                    </button>
+                  </span>
+                )}
+                {removeFile && (
+                  <span className="text-xs text-[#C0392B] font-medium">Arquivo será removido</span>
+                )}
+              </div>
             </div>
           </div>
 

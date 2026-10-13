@@ -42,8 +42,15 @@ const filters: Array<{ value: Filter; label: string }> = [
 
 export default function Dashboard() {
   const { user } = useAuth()
-  const { courses, lessons, loading, updateCourseStatus, deleteCourse, lessonCount } =
-    useBackoffice()
+  const {
+    courses,
+    lessons,
+    loading,
+    updateCourseStatus,
+    deleteCourse,
+    lessonCount,
+    canAccessCourseContent,
+  } = useBackoffice()
   const { openNewCourse, openEditCourse } = useCourseModal()
   const { toast } = useToast()
   const [filter, setFilter] = useState<Filter>('todos')
@@ -224,6 +231,7 @@ export default function Dashboard() {
                 onToggle={() => void toggleStatus(course)}
                 onDelete={() => setDeleting(course)}
                 canManage={canManage}
+                isLocked={!canAccessCourseContent(course.id)}
               />
             ))}
           </div>
