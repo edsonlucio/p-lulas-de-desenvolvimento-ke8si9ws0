@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T01:25:17.088Z",
+  "generatedAt": "2026-10-13T01:44:58.657Z",
   "collections": [
     {
       "name": "users",
@@ -238,11 +238,25 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "is_ai",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "conversation_id",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
         "CREATE INDEX idx_chat_lesson_created ON lesson_chat_messages (lesson, created)",
-        "CREATE INDEX idx_chat_user ON lesson_chat_messages (user)"
+        "CREATE INDEX idx_chat_user ON lesson_chat_messages (user)",
+        "CREATE INDEX `idx_chat_lesson_user` ON `lesson_chat_messages` (lesson, user)",
+        "CREATE INDEX `idx_chat_conversation` ON `lesson_chat_messages` (conversation_id)"
       ]
     }
   ]

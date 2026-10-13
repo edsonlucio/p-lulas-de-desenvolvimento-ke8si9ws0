@@ -42,6 +42,8 @@ export interface LessonChatMessage extends RecordModel {
   lesson: string
   user: string
   message: string
+  is_ai?: boolean
+  conversation_id?: string
   created: string
   updated: string
   expand?: {

@@ -9,16 +9,24 @@ export async function listLessonChatMessages(lessonId: string): Promise<LessonCh
   })
 }
 
+export interface SendChatMessageOptions {
+  isAi?: boolean
+  conversationId?: string
+}
+
 export async function sendLessonChatMessage(
   lessonId: string,
   userId: string,
   message: string,
+  options: SendChatMessageOptions = {},
 ): Promise<LessonChatMessage> {
   return pb.collection<LessonChatMessage>('lesson_chat_messages').create(
     {
       lesson: lessonId,
       user: userId,
       message: message.trim(),
+      is_ai: Boolean(options.isAi),
+      conversation_id: options.conversationId || '',
     },
     {
       expand: 'user',
