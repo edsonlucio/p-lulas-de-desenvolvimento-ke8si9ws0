@@ -9,22 +9,26 @@ import {
   LogOut,
   Menu,
   MessageSquare,
+  Moon,
   Plus,
   Settings,
   ShieldCheck,
+  Sun,
   UsersRound,
   X,
   PlayCircle,
 } from 'lucide-react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
-import { BrandLogo, BrandMark } from '@/components/BrandLogo'
+import { BrandLogo } from '@/components/BrandLogo'
 import { GlobalLessonSearch } from '@/components/GlobalLessonSearch'
+import { NotificationBell } from '@/components/NotificationBell'
 import { RoleBadge } from '@/components/RoleBadge'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
+import { useTheme } from '@/contexts/ThemeContext'
 import { useToast } from '@/hooks/use-toast'
 import { canManageCoursesAndLessons, getUserRole } from '@/lib/roles'
 import { cn } from '@/lib/utils'
@@ -71,16 +75,17 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
   return (
     <aside
       className={cn(
-        'flex h-full flex-col bg-[#172E43] text-white',
+        'flex h-full flex-col bg-[#172E43] text-white select-none',
         mobile ? 'w-[286px]' : 'w-full',
       )}
     >
-      <div className="relative flex h-[104px] items-center border-b border-white/10 px-6">
-        <BrandLogo className="max-h-[72px] max-w-[205px] brightness-0 invert" />
+      {/* Topo fixo do sidebar com logo e botão de fechar no mobile */}
+      <div className="relative flex h-[88px] sm:h-[96px] shrink-0 items-center border-b border-white/10 px-5 sm:px-6">
+        <BrandLogo className="max-h-[60px] sm:max-h-[68px] max-w-[195px] brightness-0 invert" />
         {mobile ? (
           <button
             onClick={close}
-            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl text-white/70 hover:bg-white/10 hover:text-white"
+            className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition"
             aria-label="Fechar menu"
           >
             <X className="h-5 w-5" />
@@ -88,11 +93,12 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
         ) : null}
       </div>
 
-      <div className="px-5 pt-8">
+      {/* Área navegável com scroll discreto e padding balanceado */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5 custom-scrollbar">
         <p className="px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
           Navegação
         </p>
-        <nav className="mt-3 space-y-1.5">
+        <nav className="mt-2.5 space-y-1">
           {[...navigation, ...(isAdmin ? adminNavigation : []), ...settingsNavigation].map(
             ({ label, to, icon: Icon, end }) => (
               <NavLink
@@ -102,10 +108,10 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
                 onClick={close}
                 className={({ isActive }) =>
                   cn(
-                    'group relative flex min-h-12 items-center gap-3 overflow-hidden rounded-xl px-3.5 text-sm font-semibold transition-all duration-200',
+                    'group relative flex min-h-[42px] items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2 text-sm font-semibold transition-all duration-200',
                     isActive
-                      ? 'bg-[#6E9B1F] text-white shadow-[0_8px_20px_rgba(0,0,0,.16)]'
-                      : 'text-white/65 hover:bg-white/8 hover:text-white',
+                      ? 'bg-[#6E9B1F] text-white shadow-[0_6px_16px_rgba(110,155,31,.28)]'
+                      : 'text-white/70 hover:bg-white/10 hover:text-white',
                   )
                 }
               >
@@ -113,12 +119,12 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
                   <>
                     <span
                       className={cn(
-                        'absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white transition-transform duration-300',
+                        'absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-white transition-transform duration-300',
                         isActive ? 'scale-y-100' : 'scale-y-0',
                       )}
                     />
-                    <Icon className="h-[19px] w-[19px] shrink-0" />
-                    <span>{label}</span>
+                    <Icon className="h-[18px] w-[18px] shrink-0" />
+                    <span className="truncate">{label}</span>
                   </>
                 )}
               </NavLink>
@@ -127,20 +133,21 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
         </nav>
       </div>
 
-      <div className="mx-5 mt-auto border-t border-white/10 py-5">
-        <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] p-3">
+      {/* Bloco fixo do usuário no rodapé da sidebar */}
+      <div className="shrink-0 border-t border-white/10 p-3.5 sm:p-4 bg-[#14293D]">
+        <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.06] p-2.5">
           <UserAvatar user={user} className="h-9 w-9 shrink-0 border-white/10" />
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              <p className="truncate text-sm font-bold">{user?.name || 'Usuário'}</p>
-            </div>
-            <div className="mt-1 flex items-center gap-1.5">
+            <p className="truncate text-xs sm:text-sm font-bold text-white">
+              {user?.name || 'Usuário'}
+            </p>
+            <div className="mt-0.5 flex items-center gap-1.5">
               <RoleBadge user={user} size="sm" />
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-white/55 transition hover:bg-white/10 hover:text-white"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-white/55 transition hover:bg-white/15 hover:text-white"
             title="Sair"
             aria-label="Sair"
           >
@@ -155,6 +162,7 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
 export default function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false)
   const { user, logout } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const { toast } = useToast()
   const { openNewCourse } = useCourseModal()
@@ -169,11 +177,13 @@ export default function Layout() {
   useEffect(() => setDrawerOpen(false), [location.pathname])
 
   return (
-    <div className="min-h-screen bg-[#F4F5F3] font-quicksand text-[#1F3864]">
+    <div className="min-h-screen bg-[#F4F5F3] font-quicksand text-[#1F3864] dark:bg-[#102438] dark:text-white transition-colors duration-200">
+      {/* Sidebar fixo desktop */}
       <div className="fixed inset-y-0 left-0 z-40 hidden w-[248px] lg:block xl:w-[260px]">
         <Sidebar />
       </div>
 
+      {/* Drawer mobile */}
       <div
         className={cn(
           'fixed inset-0 z-50 lg:hidden',
@@ -199,59 +209,86 @@ export default function Layout() {
         </div>
       </div>
 
+      {/* Área principal */}
       <div className="min-h-screen lg:pl-[248px] xl:pl-[260px]">
-        <header className="fixed left-0 right-0 top-0 z-30 h-[72px] border-b border-[#1F3864]/[0.06] bg-white/95 shadow-[0_2px_14px_rgba(31,56,100,.05)] backdrop-blur-md lg:left-[248px] xl:left-[260px]">
-          <div className="flex h-full items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-            <div className="flex min-w-0 items-center gap-3">
+        <header className="fixed left-0 right-0 top-0 z-30 h-[72px] border-b border-[#1F3864]/[0.06] bg-white/95 shadow-[0_2px_14px_rgba(31,56,100,.05)] backdrop-blur-md dark:border-white/10 dark:bg-[#14293D]/95 lg:left-[248px] xl:left-[260px] transition-colors duration-200">
+          <div className="flex h-full items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 lg:px-8">
+            {/* Lado esquerdo: Menu hambúrguer + Logo + Busca Global */}
+            <div className="flex min-w-0 items-center gap-2 sm:gap-3">
               <button
                 onClick={() => setDrawerOpen(true)}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-[#1F3864] hover:bg-[#F4F5F3] lg:hidden"
+                className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl text-[#1F3864] hover:bg-[#F4F5F3] dark:text-white dark:hover:bg-white/10 lg:hidden"
                 aria-label="Abrir menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
               <div className="flex items-center gap-2.5">
-                <BrandLogo className="h-9 w-auto max-w-[170px] sm:max-w-[200px]" />
+                <BrandLogo className="h-8 sm:h-9 w-auto max-w-[140px] sm:max-w-[200px]" />
               </div>
-              <div className="hidden md:block ml-4">
+              <div className="hidden md:block ml-2 lg:ml-4">
                 <GlobalLessonSearch />
               </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3">
+
+            {/* Lado direito: Busca mobile + Novo Curso + Notificações + Tema + Usuário + Logout */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5">
               <div className="block md:hidden">
                 <GlobalLessonSearch />
               </div>
+
               {canManageCoursesAndLessons(user) && (
                 <Button
                   onClick={openNewCourse}
-                  className="h-11 rounded-xl bg-[#6E9B1F] px-3 font-bold text-white shadow-[0_5px_14px_rgba(110,155,31,.22)] transition hover:scale-[1.02] hover:bg-[#5C8619] active:scale-[.98] sm:px-5"
+                  className="h-10 sm:h-11 rounded-xl bg-[#6E9B1F] px-2.5 sm:px-4 font-bold text-white shadow-[0_4px_12px_rgba(110,155,31,.24)] transition hover:scale-[1.02] hover:bg-[#5C8619] active:scale-[.98]"
                 >
-                  <Plus className="h-[18px] w-[18px] sm:mr-2" />
-                  <span className="hidden sm:inline">Novo Curso</span>
+                  <Plus className="h-[18px] w-[18px] sm:mr-1.5" />
+                  <span className="hidden md:inline">Novo Curso</span>
                 </Button>
               )}
-              <div className="hidden sm:flex items-center gap-2 rounded-xl bg-[#F4F5F3] px-3 py-1.5 border border-[#1F3864]/[0.06]">
+
+              {/* Sininho de Notificações com badge de não lidas e dropdown */}
+              <NotificationBell />
+
+              {/* Botão de Alternância de Tema Claro / Escuro */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#1F3864]/10 bg-white/90 text-[#1F3864] transition hover:bg-[#F4F5F3] dark:border-white/10 dark:bg-[#1A334C] dark:text-white dark:hover:bg-[#203D5B]"
+                title={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+                aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+              >
+                {theme === 'dark' ? (
+                  <Sun className="h-5 w-5 text-[#F39C12] transition-transform duration-200 rotate-0 hover:rotate-45" />
+                ) : (
+                  <Moon className="h-5 w-5 text-[#1F3864] transition-transform duration-200 rotate-0 hover:-rotate-12" />
+                )}
+              </button>
+
+              {/* Perfil do Usuário */}
+              <div className="hidden sm:flex items-center gap-2 rounded-xl bg-[#F4F5F3] px-2.5 sm:px-3 py-1.5 border border-[#1F3864]/[0.06] dark:border-white/10 dark:bg-white/5">
                 <div className="text-right">
-                  <p className="text-xs font-bold text-[#1F3864] leading-tight truncate max-w-[120px]">
+                  <p className="text-xs font-bold text-[#1F3864] dark:text-white leading-tight truncate max-w-[110px] xl:max-w-[140px]">
                     {user?.name || 'Usuário'}
                   </p>
                   <RoleBadge user={user} size="sm" className="mt-0.5" />
                 </div>
-                <UserAvatar user={user} className="h-9 w-9" />
+                <UserAvatar user={user} className="h-8 w-8 sm:h-9 sm:w-9" />
               </div>
               <div className="sm:hidden">
-                <UserAvatar user={user} className="h-9 w-9" />
+                <UserAvatar user={user} className="h-8 w-8" />
               </div>
+
+              {/* Botão de Logout no header (restaurado) */}
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleHeaderLogout}
-                className="h-10 sm:h-11 rounded-xl border-[#1F3864]/15 bg-white px-2.5 sm:px-3.5 text-xs font-bold text-[#1F3864] shadow-sm transition hover:border-[#C0392B]/30 hover:bg-[#C0392B]/10 hover:text-[#C0392B] active:scale-[0.98]"
+                className="h-10 sm:h-11 rounded-xl border-[#1F3864]/15 bg-white px-2 sm:px-3 text-xs font-bold text-[#1F3864] shadow-sm transition hover:border-[#C0392B]/30 hover:bg-[#C0392B]/10 hover:text-[#C0392B] active:scale-[0.98] dark:border-white/10 dark:bg-[#1A334C] dark:text-white dark:hover:border-[#C0392B]/50 dark:hover:bg-[#C0392B]/20 dark:hover:text-red-300"
                 title="Sair da conta"
                 aria-label="Sair da conta"
               >
-                <LogOut className="h-4 w-4 sm:mr-1.5 shrink-0" />
-                <span className="hidden sm:inline">Sair</span>
+                <LogOut className="h-4 w-4 sm:mr-1 shrink-0" />
+                <span className="hidden md:inline">Sair</span>
               </Button>
             </div>
           </div>
@@ -261,18 +298,20 @@ export default function Layout() {
           <main className="flex-1 px-4 py-7 sm:px-6 sm:py-9 lg:px-8 xl:px-10">
             <Outlet />
           </main>
-          <footer className="border-t border-[#1F3864]/[0.07] bg-white/70 px-5 py-5 sm:px-8">
-            <div className="mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-3 text-center text-xs font-medium text-[#718096] sm:flex-row sm:text-left">
+          <footer className="border-t border-[#1F3864]/[0.07] bg-white/70 px-5 py-5 sm:px-8 dark:border-white/10 dark:bg-[#14293D]/80">
+            <div className="mx-auto flex max-w-[1600px] flex-col items-center justify-between gap-3 text-center text-xs font-medium text-[#718096] dark:text-white/60 sm:flex-row sm:text-left">
               <p>
-                <span className="font-bold text-[#1F3864]">Pílulas de Desenvolvimento</span> —
-                Desenvolvimento humano e comportamento estratégico
+                <span className="font-bold text-[#1F3864] dark:text-white">
+                  Pílulas de Desenvolvimento
+                </span>{' '}
+                — Desenvolvimento humano e comportamento estratégico
               </p>
               <div className="flex items-center gap-4">
                 <a
                   href="https://www.instagram.com/pilulasdedesenvolvimento"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-bold transition hover:text-[#6E9B1F]"
+                  className="inline-flex items-center gap-1 font-bold transition hover:text-[#6E9B1F] dark:hover:text-[#A8D052]"
                 >
                   Instagram <ExternalLink className="h-3 w-3" />
                 </a>
@@ -280,7 +319,7 @@ export default function Layout() {
                   href="https://www.youtube.com/@pilulasdedesenvolvimento"
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1 font-bold transition hover:text-[#6E9B1F]"
+                  className="inline-flex items-center gap-1 font-bold transition hover:text-[#6E9B1F] dark:hover:text-[#A8D052]"
                 >
                   YouTube <ExternalLink className="h-3 w-3" />
                 </a>

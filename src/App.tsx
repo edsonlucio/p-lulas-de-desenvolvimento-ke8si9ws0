@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/contexts/AuthContext'
 import { BackofficeProvider } from '@/contexts/BackofficeContext'
 import { CourseModalProvider } from '@/contexts/CourseModalContext'
+import { ThemeProvider } from '@/contexts/ThemeContext'
 import CourseDetail from '@/pages/CourseDetail'
 import Courses from '@/pages/Courses'
 import Dashboard from '@/pages/Dashboard'
@@ -31,42 +32,44 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <BackofficeProvider>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/cadastro" element={<SignUp />} />
-            <Route path="/esqueci-senha" element={<ForgotPassword />} />
-            <Route path="/redefinir-senha" element={<ResetPassword />} />
-            <Route path="/verificar-email" element={<VerifyEmail />} />
-            <Route path="/confirmar-mudanca-email" element={<ConfirmEmailChange />} />
+        <ThemeProvider>
+          <BackofficeProvider>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/cadastro" element={<SignUp />} />
+              <Route path="/esqueci-senha" element={<ForgotPassword />} />
+              <Route path="/redefinir-senha" element={<ResetPassword />} />
+              <Route path="/verificar-email" element={<VerifyEmail />} />
+              <Route path="/confirmar-mudanca-email" element={<ConfirmEmailChange />} />
 
-            <Route element={<ProtectedRoute />}>
-              <Route
-                element={
-                  <CourseModalProvider>
-                    <Layout />
-                  </CourseModalProvider>
-                }
-              >
-                <Route index element={<Dashboard />} />
-                <Route path="/cursos" element={<Courses />} />
-                <Route path="/cursos/:id" element={<CourseDetail />} />
-                <Route path="/clube" element={<Clube />} />
-                <Route path="/comunidade" element={<Comunidade />} />
-                <Route path="/contatos" element={<Contatos />} />
-                <Route path="/aulas" element={<Lessons />} />
-                <Route path="/aulas/:id" element={<LessonDetail />} />
-                <Route path="/favoritas" element={<Favoritas />} />
-                <Route path="/mentorias" element={<Mentorias />} />
-                <Route path="/gestao" element={<Gestao />} />
-                <Route path="/duvidas" element={<Duvidas />} />
-                <Route path="/configuracoes" element={<Settings />} />
+              <Route element={<ProtectedRoute />}>
+                <Route
+                  element={
+                    <CourseModalProvider>
+                      <Layout />
+                    </CourseModalProvider>
+                  }
+                >
+                  <Route index element={<Dashboard />} />
+                  <Route path="/cursos" element={<Courses />} />
+                  <Route path="/cursos/:id" element={<CourseDetail />} />
+                  <Route path="/clube" element={<Clube />} />
+                  <Route path="/comunidade" element={<Comunidade />} />
+                  <Route path="/contatos" element={<Contatos />} />
+                  <Route path="/aulas" element={<Lessons />} />
+                  <Route path="/aulas/:id" element={<LessonDetail />} />
+                  <Route path="/favoritas" element={<Favoritas />} />
+                  <Route path="/mentorias" element={<Mentorias />} />
+                  <Route path="/gestao" element={<Gestao />} />
+                  <Route path="/duvidas" element={<Duvidas />} />
+                  <Route path="/configuracoes" element={<Settings />} />
+                </Route>
               </Route>
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <Toaster />
-        </BackofficeProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Toaster />
+          </BackofficeProvider>
+        </ThemeProvider>
       </AuthProvider>
     </BrowserRouter>
   )
