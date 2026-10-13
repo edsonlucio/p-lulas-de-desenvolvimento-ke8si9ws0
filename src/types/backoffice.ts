@@ -23,10 +23,29 @@ export interface Lesson extends RecordModel {
   order: number
   description?: string
   video_url?: string
+  thumbnail?: string
+  video_upload?: string
+  pdf_file?: string
+  pdf_url?: string
+  ppt_file?: string
+  ppt_url?: string
   created: string
   updated: string
   expand?: {
     course?: Course
+  }
+}
+
+export interface LessonProgress extends RecordModel {
+  user: string
+  lesson: string
+  completed: boolean
+  completed_at?: string
+  created: string
+  updated: string
+  expand?: {
+    lesson?: Lesson
+    user?: UserRecord
   }
 }
 
@@ -57,6 +76,7 @@ export interface CourseInput {
   description: string
   status: CourseStatus
   thumbnail?: File | null
+  removeThumbnail?: boolean
   studentsCount?: number
   order?: number
 }
@@ -68,4 +88,14 @@ export interface LessonInput {
   order: number
   description?: string
   videoUrl?: string
+  thumbnail?: File | null
+  removeThumbnail?: boolean
+  videoUpload?: File | null
+  removeVideoUpload?: boolean
+  pdfFile?: File | null
+  removePdfFile?: boolean
+  pdfUrl?: string
+  pptFile?: File | null
+  removePptFile?: boolean
+  pptUrl?: string
 }

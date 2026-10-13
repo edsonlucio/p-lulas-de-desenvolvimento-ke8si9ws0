@@ -56,8 +56,13 @@ export function AuthShell({
               Desenvolvimento
             </span>
           </Link>
-          <div className="animate-fade-in-up rounded-3xl bg-white p-6 shadow-[0_12px_42px_rgba(31,56,100,.09)] sm:p-9">
-            <div className="mb-7">
+          <div className="relative animate-fade-in-up rounded-3xl bg-white p-6 shadow-[0_12px_42px_rgba(31,56,100,.09)] sm:p-9">
+            {/* Logo no canto superior do formulário */}
+            <div className="absolute right-6 top-6 hidden sm:block">
+              <BrandLogo className="h-8 w-auto max-w-[125px]" />
+            </div>
+
+            <div className="mb-7 pr-0 sm:pr-28">
               <p className="mb-2 text-xs font-bold uppercase tracking-[.18em] text-[#6E9B1F]">
                 Área administrativa
               </p>

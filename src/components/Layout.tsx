@@ -173,13 +173,9 @@ export default function Layout() {
               >
                 <Menu className="h-5 w-5" />
               </button>
-              <div className="hidden sm:block lg:hidden">
-                <BrandLogo compact />
+              <div className="flex items-center gap-2.5">
+                <BrandLogo className="h-9 w-auto max-w-[170px] sm:max-w-[200px]" />
               </div>
-              <div className="hidden lg:block">
-                <p className="text-[17px] font-bold text-[#1F3864]">Pílulas de Desenvolvimento</p>
-              </div>
-              <BrandMark className="h-8 w-8 text-[#6E9B1F] sm:hidden" />
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
               {canManageCoursesAndLessons(user) && (

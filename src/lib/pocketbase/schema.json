@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T01:44:58.657Z",
+  "generatedAt": "2026-10-13T02:00:16.269Z",
   "collections": [
     {
       "name": "users",
@@ -187,6 +187,42 @@
           "type": "text",
           "required": false,
           "system": false
+        },
+        {
+          "name": "thumbnail",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "video_upload",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pdf_file",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "pdf_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ppt_file",
+          "type": "file",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "ppt_url",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -257,6 +293,64 @@
         "CREATE INDEX idx_chat_user ON lesson_chat_messages (user)",
         "CREATE INDEX `idx_chat_lesson_user` ON `lesson_chat_messages` (lesson, user)",
         "CREATE INDEX `idx_chat_conversation` ON `lesson_chat_messages` (conversation_id)"
+      ]
+    },
+    {
+      "name": "lesson_progress",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "create": "@request.auth.id != '' && (@request.body.user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "update": "@request.auth.id != '' && ((user = @request.auth.id && @request.body.user = @request.auth.id) || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "lesson",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "lessons"
+        },
+        {
+          "name": "completed",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "completed_at",
+          "type": "date",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_progress_user_lesson ON lesson_progress (user, lesson)",
+        "CREATE INDEX idx_progress_user ON lesson_progress (user)",
+        "CREATE INDEX idx_progress_lesson ON lesson_progress (lesson)"
       ]
     }
   ]

@@ -30,6 +30,7 @@ import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { canManageCoursesAndLessons, canEditLesson } from '@/lib/roles'
 import { getCourseCoverUrl } from '@/services/courses'
+import { getLessonFileUrl } from '@/services/lessons'
 import type { Lesson } from '@/types/backoffice'
 
 export default function CourseDetail() {
@@ -268,6 +269,15 @@ export default function CourseDetail() {
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF0DF] text-sm font-bold text-[#6E9B1F]">
                   {String(index + 1).padStart(2, '0')}
                 </span>
+                {lesson.thumbnail ? (
+                  <div className="hidden h-12 w-20 shrink-0 overflow-hidden rounded-lg bg-[#1F3864] sm:block">
+                    <img
+                      src={getLessonFileUrl(lesson, lesson.thumbnail) ?? ''}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                ) : null}
                 <Link
                   to={`/aulas/${lesson.id}`}
                   className="min-w-0 flex-1 group-hover:text-[#6E9B1F] transition"
@@ -279,7 +289,7 @@ export default function CourseDetail() {
                     <Clock3 className="h-3.5 w-3.5" />
                     {lesson.duration_min} minutos · Ordem {lesson.order}
                   </p>
-                </Link>
+                </Link>{' '}
                 <div className="flex items-center gap-1">
                   <Link
                     to={`/aulas/${lesson.id}`}

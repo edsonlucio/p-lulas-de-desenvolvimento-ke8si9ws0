@@ -32,9 +32,16 @@ interface FormState {
   description: string
   status: CourseStatus
   thumbnail: File | null
+  removeThumbnail: boolean
 }
 
-const emptyForm: FormState = { title: '', description: '', status: 'ativo', thumbnail: null }
+const emptyForm: FormState = {
+  title: '',
+  description: '',
+  status: 'ativo',
+  thumbnail: null,
+  removeThumbnail: false,
+}
 
 export function CourseFormDialog({
   open,
@@ -64,6 +71,7 @@ export function CourseFormDialog({
             description: course.description,
             status: course.status,
             thumbnail: null,
+            removeThumbnail: false,
           }
         : emptyForm,
     )
@@ -85,7 +93,7 @@ export function CourseFormDialog({
     setErrors((current) => ({ ...current, ...nextErrors }))
     if (Object.keys(nextErrors).length) return
     if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
-    setForm((current) => ({ ...current, thumbnail: file }))
+    setForm((current) => ({ ...current, thumbnail: file, removeThumbnail: false }))
     setPreview(URL.createObjectURL(file))
     setErrors((current) => ({ ...current, thumbnail: '' }))
   }
@@ -115,6 +123,7 @@ export function CourseFormDialog({
         description: form.description,
         status: form.status,
         thumbnail: form.thumbnail,
+        removeThumbnail: form.removeThumbnail,
       }
       if (course) await updateCourse(course, input)
       else await createCourse(input)
@@ -237,11 +246,17 @@ export function CourseFormDialog({
                   <button
                     type="button"
                     onClick={() => {
+                      if (preview?.startsWith('blob:')) URL.revokeObjectURL(preview)
                       setPreview(null)
-                      setForm((current) => ({ ...current, thumbnail: null }))
+                      setForm((current) => ({
+                        ...current,
+                        thumbnail: null,
+                        removeThumbnail: true,
+                      }))
                     }}
                     className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#1F3864] shadow transition hover:scale-105"
-                    aria-label="Remover nova imagem"
+                    aria-label="Remover imagem"
+                    title="Remover thumbnail"
                   >
                     <X className="h-4 w-4" />
                   </button>

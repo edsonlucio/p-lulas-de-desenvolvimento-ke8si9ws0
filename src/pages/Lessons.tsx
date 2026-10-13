@@ -21,6 +21,7 @@ import { useBackoffice } from '@/contexts/BackofficeContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { canManageCoursesAndLessons, canEditLesson } from '@/lib/roles'
+import { getLessonFileUrl } from '@/services/lessons'
 import type { Lesson } from '@/types/backoffice'
 
 export default function Lessons() {
@@ -148,6 +149,15 @@ export default function Lessons() {
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F5EA] text-xs font-bold text-[#6E9B1F]">
                       {String(index + 1).padStart(2, '0')}
                     </span>
+                    {lesson.thumbnail ? (
+                      <div className="hidden h-11 w-16 shrink-0 overflow-hidden rounded-lg bg-[#1F3864] sm:block">
+                        <img
+                          src={getLessonFileUrl(lesson, lesson.thumbnail) ?? ''}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
+                    ) : null}
                     <Link
                       to={`/aulas/${lesson.id}`}
                       className="min-w-0 flex-1 group-hover:text-[#6E9B1F] transition"

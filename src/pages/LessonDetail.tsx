@@ -10,6 +10,14 @@ import {
   Edit3,
   CheckCircle2,
   Share2,
+  FileText,
+  Presentation,
+  Download,
+  ExternalLink,
+  Film,
+  Check,
+  Sparkles,
+  Loader2,
 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -22,6 +30,9 @@ import { useBackoffice } from '@/contexts/BackofficeContext'
 import { useToast } from '@/hooks/use-toast'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { canEditLesson } from '@/lib/roles'
+import { getLessonFileUrl } from '@/services/lessons'
+import { getUserCourseProgress, toggleLessonProgress } from '@/services/progress'
+import type { LessonProgress } from '@/types/backoffice'
 import { cn } from '@/lib/utils'
 
 export default function LessonDetail() {
@@ -33,22 +44,106 @@ export default function LessonDetail() {
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
 
-  // A aula atual
+  // Progresso do aluno
+  const [userProgressList, setUserProgressList] = useState<LessonProgress[]>([])
+  const [progressLoading, setProgressLoading] = useState(false)
+  const [togglingProgress, setTogglingProgress] = useState(false)
+
+  // Aula atual
   const currentLesson = useMemo(() => lessons.find((item) => item.id === id), [lessons, id])
 
-  // O curso pertencente
+  // Curso
   const course = useMemo(() => {
     if (!currentLesson) return null
     return courses.find((c) => c.id === currentLesson.course) ?? null
   }, [courses, currentLesson])
 
-  // Aulas do mesmo curso ordenadas por `order`
+  // Aulas do mesmo curso
   const courseLessons = useMemo(() => {
     if (!currentLesson) return []
     return lessons
       .filter((l) => l.course === currentLesson.course)
       .sort((a, b) => a.order - b.order)
   }, [lessons, currentLesson])
+
+  // Carregar progresso do aluno para as aulas deste curso
+  useEffect(() => {
+    let cancelled = false
+    if (!user?.id) return
+
+    setProgressLoading(true)
+    getUserCourseProgress(user.id)
+      .then((records) => {
+        if (!cancelled) {
+          setUserProgressList(records)
+        }
+      })
+      .catch((err) => {
+        console.warn('Erro ao carregar progresso:', err)
+      })
+      .finally(() => {
+        if (!cancelled) setProgressLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
+
+  // Status de conclusão da aula atual
+  const isCurrentLessonCompleted = useMemo(() => {
+    if (!currentLesson) return false
+    const entry = userProgressList.find((p) => p.lesson === currentLesson.id)
+    return Boolean(entry?.completed)
+  }, [userProgressList, currentLesson])
+
+  // Estatísticas de progresso no curso
+  const courseProgressStats = useMemo(() => {
+    const total = courseLessons.length
+    if (!total) return { total: 0, completed: 0, percentage: 0 }
+
+    const completedLessonIds = new Set(
+      userProgressList.filter((p) => p.completed).map((p) => p.lesson),
+    )
+    const completedCount = courseLessons.filter((l) => completedLessonIds.has(l.id)).length
+    const percentage = Math.round((completedCount / total) * 100)
+
+    return {
+      total,
+      completed: completedCount,
+      percentage,
+    }
+  }, [courseLessons, userProgressList])
+
+  // Alternar conclusão da aula atual
+  const handleToggleComplete = async () => {
+    if (!user?.id || !currentLesson) return
+    setTogglingProgress(true)
+    const nextCompleted = !isCurrentLessonCompleted
+
+    try {
+      const updated = await toggleLessonProgress(user.id, currentLesson.id, nextCompleted)
+      setUserProgressList((prev) => {
+        const withoutCurrent = prev.filter((p) => p.lesson !== currentLesson.id)
+        return [...withoutCurrent, updated]
+      })
+
+      toast({
+        title: nextCompleted ? 'Aula concluída!' : 'Aula marcada como pendente',
+        description: nextCompleted
+          ? `Parabéns! Progresso atualizado para ${courseProgressStats.percentage + (courseProgressStats.total > 0 ? Math.round(100 / courseProgressStats.total) : 0)}% do curso.`
+          : 'Status de conclusão revertido com sucesso.',
+      })
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Não foi possível salvar o progresso',
+        description: 'Tente novamente em instantes.',
+      })
+    } finally {
+      setTogglingProgress(false)
+    }
+  }
 
   // Índice da aula atual na lista ordenada
   const currentIndex = useMemo(() => {
@@ -62,10 +157,39 @@ export default function LessonDetail() {
       ? courseLessons[currentIndex + 1]
       : null
 
+  // Embed YouTube
   const embedUrl = useMemo(
     () => getYouTubeEmbedUrl(currentLesson?.video_url),
     [currentLesson?.video_url],
   )
+
+  // Arquivo de vídeo gravado direto do PocketBase
+  const videoUploadUrl = useMemo(() => {
+    if (!currentLesson?.video_upload) return null
+    return getLessonFileUrl(currentLesson, currentLesson.video_upload)
+  }, [currentLesson])
+
+  // Arquivo PDF (upload direto ou link online)
+  const pdfDirectUrl = useMemo(() => {
+    if (!currentLesson?.pdf_file) return null
+    return getLessonFileUrl(currentLesson, currentLesson.pdf_file)
+  }, [currentLesson])
+  const pdfDownloadUrl = useMemo(() => {
+    if (!currentLesson?.pdf_file) return null
+    return getLessonFileUrl(currentLesson, currentLesson.pdf_file, { download: true })
+  }, [currentLesson])
+  const pdfExternalUrl = currentLesson?.pdf_url?.trim() || null
+
+  // Arquivo PPT (upload direto ou link online)
+  const pptDirectUrl = useMemo(() => {
+    if (!currentLesson?.ppt_file) return null
+    return getLessonFileUrl(currentLesson, currentLesson.ppt_file)
+  }, [currentLesson])
+  const pptDownloadUrl = useMemo(() => {
+    if (!currentLesson?.ppt_file) return null
+    return getLessonFileUrl(currentLesson, currentLesson.ppt_file, { download: true })
+  }, [currentLesson])
+  const pptExternalUrl = currentLesson?.ppt_url?.trim() || null
 
   const canEdit = canEditLesson(user)
 
@@ -107,9 +231,65 @@ export default function LessonDetail() {
     }
   }
 
+  // Verifica se há algum material disponível além do vídeo principal
+  const hasExtraMaterials = Boolean(
+    pdfDirectUrl || pdfExternalUrl || pptDirectUrl || pptExternalUrl,
+  )
+
   return (
     <div className="mx-auto max-w-[1300px] space-y-6 pb-16 font-quicksand">
-      {/* 3. TOPO DA TELA: Nome do curso com link de volta e botões de navegação anterior/próxima */}
+      {/* 2. BARRA DE PROGRESSO DO ALUNO NO TOPO DA TELA DA AULA */}
+      <section className="overflow-hidden rounded-2xl bg-white p-4 shadow-[0_4px_18px_rgba(31,56,100,.06)] sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF0DF] text-[#6E9B1F]">
+              <Sparkles className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#6E9B1F]">
+                Progresso do Aluno
+              </p>
+              <p className="text-sm font-bold text-[#1F3864]">
+                {courseProgressStats.completed} de {courseProgressStats.total}{' '}
+                {courseProgressStats.total === 1 ? 'aula concluída' : 'aulas concluídas'} ·{' '}
+                <span className="text-[#6E9B1F]">{courseProgressStats.percentage}%</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={handleToggleComplete}
+              disabled={togglingProgress}
+              className={cn(
+                'h-11 rounded-xl px-5 font-bold transition shadow-sm',
+                isCurrentLessonCompleted
+                  ? 'bg-[#EAF0DF] text-[#6E9B1F] hover:bg-[#dfe7d2]'
+                  : 'bg-[#6E9B1F] text-white hover:bg-[#5C8619]',
+              )}
+            >
+              {togglingProgress ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : isCurrentLessonCompleted ? (
+                <Check className="mr-2 h-4 w-4 stroke-[3]" />
+              ) : (
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+              )}
+              {isCurrentLessonCompleted ? 'Aula concluída' : 'Marcar como concluída'}
+            </Button>
+          </div>
+        </div>
+
+        {/* Linha da barra de progresso visual */}
+        <div className="mt-3.5 h-2.5 w-full overflow-hidden rounded-full bg-[#EDF0EA]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[#6E9B1F] to-[#88B82B] transition-all duration-500 ease-out"
+            style={{ width: `${Math.min(100, Math.max(0, courseProgressStats.percentage))}%` }}
+          />
+        </div>
+      </section>
+
+      {/* CABEÇALHO DO CURSO E NAVEGAÇÃO ENTRE AULAS */}
       <header className="flex flex-col gap-4 rounded-2xl bg-white p-4 shadow-[0_4px_18px_rgba(31,56,100,.06)] sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="flex min-w-0 items-center gap-3">
           <Link
@@ -163,7 +343,7 @@ export default function LessonDetail() {
         </div>
       </header>
 
-      {/* 1. PLAYER DE VÍDEO CENTRALIZADO NO TOPO DENTRO DE CARD COM CANTOS ARREDONDADOS E SOMBRA SUAVE */}
+      {/* 1. SEÇÃO DE VÍDEO: YOUTUBE, VÍDEO GRAVADO OU PLACEHOLDER "VÍDEO EM BREVE" */}
       <section className="overflow-hidden rounded-3xl bg-white p-3 shadow-[0_8px_30px_rgba(31,56,100,.10)] sm:p-4">
         <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-[#0F1E33] shadow-inner">
           {embedUrl ? (
@@ -174,8 +354,17 @@ export default function LessonDetail() {
               allowFullScreen
               className="absolute inset-0 h-full w-full border-0"
             />
+          ) : videoUploadUrl ? (
+            <video
+              src={videoUploadUrl}
+              controls
+              playsInline
+              className="absolute inset-0 h-full w-full bg-black object-contain"
+            >
+              Seu navegador não suporta a tag de vídeo.
+            </video>
           ) : (
-            /* Placeholder elegante com ícone de play e mensagem exata "Vídeo em breve" */
+            /* Placeholder com ícone de play e texto verbatim "Vídeo em breve" */
             <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#172E43] via-[#1F3864] to-[#14293D] p-6 text-center text-white">
               <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-white/10 backdrop-blur-sm shadow-[0_8px_24px_rgba(0,0,0,.25)] ring-8 ring-white/5 transition duration-300 hover:scale-105">
                 <Play className="ml-1 h-10 w-10 text-[#A8D052]" fill="#A8D052" />
@@ -193,7 +382,7 @@ export default function LessonDetail() {
                   className="mt-6 h-10 rounded-xl bg-[#6E9B1F] px-4 font-bold text-white hover:bg-[#5C8619]"
                 >
                   <Edit3 className="mr-2 h-4 w-4" />
-                  Adicionar link do YouTube
+                  Gerenciar materiais da aula
                 </Button>
               )}
             </div>
@@ -201,7 +390,147 @@ export default function LessonDetail() {
         </div>
       </section>
 
-      {/* 2. ABAIXO DO VÍDEO: TÍTULO DA AULA E DESCRIÇÃO CURTA COM METADADOS */}
+      {/* SEÇÃO DE MATERIAIS COMPLEMENTARES CADASTRADOS (PDF, PPT, VÍDEO GRAVADO ADICIONAL) */}
+      {hasExtraMaterials && (
+        <section className="rounded-3xl bg-white p-6 shadow-[0_6px_22px_rgba(31,56,100,.08)] sm:p-8">
+          <div className="mb-5 flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-[#6E9B1F]">
+                Materiais Didáticos
+              </p>
+              <h2 className="text-xl font-bold text-[#1F3864]">
+                Arquivos e apresentações desta aula
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Material em PDF */}
+            {(pdfDirectUrl || pdfExternalUrl) && (
+              <div className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFDFD] p-5 shadow-sm transition hover:border-[#C0392B]/40 hover:bg-[#FCF7F7]">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#C0392B]/10 text-[#C0392B]">
+                    <FileText className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="inline-block rounded-md bg-[#C0392B]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#C0392B]">
+                      PDF
+                    </span>
+                    <h3 className="mt-1 font-bold text-[#1F3864]">Material em PDF</h3>
+                    <p className="mt-0.5 text-xs font-medium text-[#718096]">
+                      Apostila, exercícios e leitura de apoio
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[#EDF0EA] pt-4">
+                  {pdfDirectUrl && (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="h-9 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] hover:bg-white"
+                    >
+                      <a href={pdfDirectUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-[#C0392B]" />
+                        Abrir PDF
+                      </a>
+                    </Button>
+                  )}
+                  {pdfDownloadUrl && (
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-9 rounded-xl bg-[#C0392B] font-bold text-white hover:bg-[#A93226]"
+                    >
+                      <a href={pdfDownloadUrl} download>
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Baixar
+                      </a>
+                    </Button>
+                  )}
+                  {!pdfDirectUrl && pdfExternalUrl && (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="h-9 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] hover:bg-white"
+                    >
+                      <a href={pdfExternalUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-[#C0392B]" />
+                        Acessar PDF online
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Material em PPT / PowerPoint */}
+            {(pptDirectUrl || pptExternalUrl) && (
+              <div className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFDFD] p-5 shadow-sm transition hover:border-[#D35400]/40 hover:bg-[#FDF9F5]">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#D35400]/10 text-[#D35400]">
+                    <Presentation className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="inline-block rounded-md bg-[#D35400]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#D35400]">
+                      Slides
+                    </span>
+                    <h3 className="mt-1 font-bold text-[#1F3864]">Apresentação (PPT)</h3>
+                    <p className="mt-0.5 text-xs font-medium text-[#718096]">
+                      Slides apresentados pelo instrutor
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[#EDF0EA] pt-4">
+                  {pptDirectUrl && (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="h-9 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] hover:bg-white"
+                    >
+                      <a href={pptDirectUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-[#D35400]" />
+                        Visualizar slides
+                      </a>
+                    </Button>
+                  )}
+                  {pptDownloadUrl && (
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-9 rounded-xl bg-[#D35400] font-bold text-white hover:bg-[#BA4A00]"
+                    >
+                      <a href={pptDownloadUrl} download>
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Baixar PPT
+                      </a>
+                    </Button>
+                  )}
+                  {!pptDirectUrl && pptExternalUrl && (
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="sm"
+                      className="h-9 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] hover:bg-white"
+                    >
+                      <a href={pptExternalUrl} target="_blank" rel="noreferrer">
+                        <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-[#D35400]" />
+                        Acessar slides online
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* METADADOS, TÍTULO DA AULA E DESCRIÇÃO CURTA */}
       <section className="rounded-3xl bg-white p-6 shadow-[0_6px_22px_rgba(31,56,100,.08)] sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
@@ -214,6 +543,12 @@ export default function LessonDetail() {
                 <Clock3 className="h-3.5 w-3.5" />
                 {currentLesson.duration_min} min de conteúdo
               </span>
+              {isCurrentLessonCompleted && (
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#6E9B1F]/15 px-3 py-1 text-xs font-bold text-[#6E9B1F]">
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                  Concluída
+                </span>
+              )}
             </div>
 
             <h1 className="mt-4 text-2xl font-bold tracking-tight text-[#1F3864] sm:text-3xl">
@@ -284,7 +619,7 @@ export default function LessonDetail() {
         </div>
       </section>
 
-      {/* Playlist lateral / grade rápida das outras aulas do mesmo curso */}
+      {/* Playlist / Grade rápida das aulas do curso com indicação de concluídas */}
       {courseLessons.length > 1 && (
         <section className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.06)] sm:p-7">
           <div className="mb-4 flex items-center justify-between">
@@ -307,6 +642,8 @@ export default function LessonDetail() {
           <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {courseLessons.map((item, idx) => {
               const isSelected = item.id === currentLesson.id
+              const isCompleted = userProgressList.some((p) => p.lesson === item.id && p.completed)
+
               return (
                 <Link
                   key={item.id}
@@ -321,10 +658,18 @@ export default function LessonDetail() {
                   <span
                     className={cn(
                       'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold',
-                      isSelected ? 'bg-[#6E9B1F] text-white' : 'bg-[#EDF0EA] text-[#5A6B7E]',
+                      isCompleted
+                        ? 'bg-[#6E9B1F] text-white'
+                        : isSelected
+                          ? 'bg-[#1F3864] text-white'
+                          : 'bg-[#EDF0EA] text-[#5A6B7E]',
                     )}
                   >
-                    {String(idx + 1).padStart(2, '0')}
+                    {isCompleted ? (
+                      <Check className="h-4 w-4 stroke-[3]" />
+                    ) : (
+                      String(idx + 1).padStart(2, '0')
+                    )}
                   </span>
                   <div className="min-w-0 flex-1">
                     <p
@@ -351,10 +696,10 @@ export default function LessonDetail() {
         </section>
       )}
 
-      {/* 4. WIDGET DE CHAT DE DÚVIDAS FLUTUANTE NO CANTO INFERIOR DIREITO */}
+      {/* Widget de Chat da Aula */}
       <LessonChatWidget lessonId={currentLesson.id} lessonTitle={currentLesson.title} />
 
-      {/* Modal de Edição de Aula para quem tem permissão */}
+      {/* Modal de Edição de Aula */}
       <LessonFormDialog
         open={editDialogOpen}
         onOpenChange={(open) => {
