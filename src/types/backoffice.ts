@@ -219,6 +219,19 @@ export interface LessonFavorite extends RecordModel {
 
 export type NotificationType = 'aula' | 'clube' | 'mentoria' | 'matricula' | 'sistema'
 
+export interface CertificateRecord extends RecordModel {
+  student: string
+  course: string
+  issued_at: string
+  code: string
+  created: string
+  updated: string
+  expand?: {
+    student?: UserRecord
+    course?: Course
+  }
+}
+
 export interface AppNotification extends RecordModel {
   user: string
   title: string

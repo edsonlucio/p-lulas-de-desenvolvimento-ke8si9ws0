@@ -3,12 +3,14 @@ import {
   BookOpen,
   Bookmark,
   ExternalLink,
+  Heart,
   HelpCircle,
   LayoutDashboard,
   LogOut,
   Menu,
   Plus,
   Settings,
+  ShieldCheck,
   UsersRound,
   X,
   PlayCircle,
@@ -16,6 +18,7 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { BrandLogo, BrandMark } from '@/components/BrandLogo'
+import { GlobalLessonSearch } from '@/components/GlobalLessonSearch'
 import { RoleBadge } from '@/components/RoleBadge'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
@@ -37,9 +40,13 @@ const navigation: NavItem[] = [
   { label: 'Cursos', to: '/cursos', icon: BookOpen },
   { label: 'Clube das Pílulas', to: '/clube', icon: Bookmark },
   { label: 'Aulas', to: '/aulas', icon: PlayCircle },
+  { label: 'Favoritas', to: '/favoritas', icon: Heart },
   { label: 'Mentorias', to: '/mentorias', icon: UsersRound },
 ]
-const adminNavigation: NavItem[] = [{ label: 'Dúvidas', to: '/duvidas', icon: HelpCircle }]
+const adminNavigation: NavItem[] = [
+  { label: 'Gestão', to: '/gestao', icon: ShieldCheck },
+  { label: 'Dúvidas', to: '/duvidas', icon: HelpCircle },
+]
 const settingsNavigation: NavItem[] = [
   { label: 'Configurações', to: '/configuracoes', icon: Settings },
 ]
@@ -195,8 +202,14 @@ export default function Layout() {
               <div className="flex items-center gap-2.5">
                 <BrandLogo className="h-9 w-auto max-w-[170px] sm:max-w-[200px]" />
               </div>
+              <div className="hidden md:block ml-4">
+                <GlobalLessonSearch />
+              </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
+              <div className="block md:hidden">
+                <GlobalLessonSearch />
+              </div>
               {canManageCoursesAndLessons(user) && (
                 <Button
                   onClick={openNewCourse}

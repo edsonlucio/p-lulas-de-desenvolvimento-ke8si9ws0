@@ -21,6 +21,7 @@ interface BackofficeContextValue {
   lessons: Lesson[]
   loading: boolean
   userEnrollments: string[]
+  pendingEnrollments: string[]
   isEnrolledInCourse: (courseId: string) => boolean
   canAccessCourseContent: (courseId: string) => boolean
   refreshCourses: () => Promise<void>
@@ -40,6 +41,7 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
   const [courses, setCourses] = useState<Course[]>([])
   const [lessons, setLessons] = useState<Lesson[]>([])
   const [userEnrollments, setUserEnrollments] = useState<string[]>([])
+  const [pendingEnrollments, setPendingEnrollments] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
 
   const role = getUserRole(user)
@@ -58,13 +60,18 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
   const refreshEnrollments = useCallback(async () => {
     if (!user?.id) {
       setUserEnrollments([])
+      setPendingEnrollments([])
       return
     }
     try {
       const records = await listUserEnrollments(user.id)
-      setUserEnrollments(records.map((r) => r.course))
+      const activeCourseIds = records.filter((r) => r.status === 'ativo').map((r) => r.course)
+      const pendingCourseIds = records.filter((r) => r.status === 'pendente').map((r) => r.course)
+      setUserEnrollments(activeCourseIds)
+      setPendingEnrollments(pendingCourseIds)
     } catch {
       setUserEnrollments([])
+      setPendingEnrollments([])
     }
   }, [user?.id])
 
@@ -94,7 +101,12 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
       ])
       setCourses(courseRows)
       setLessons(lessonRows)
-      setUserEnrollments(enrollRows.map((e) => e.course))
+      const activeCourseIds = enrollRows.filter((r) => r.status === 'ativo').map((r) => r.course)
+      const pendingCourseIds = enrollRows
+        .filter((r) => r.status === 'pendente')
+        .map((r) => r.course)
+      setUserEnrollments(activeCourseIds)
+      setPendingEnrollments(pendingCourseIds)
     } finally {
       setLoading(false)
     }
@@ -106,6 +118,7 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
       setCourses([])
       setLessons([])
       setUserEnrollments([])
+      setPendingEnrollments([])
       setLoading(false)
     }
   }, [user, refreshAll])
@@ -148,6 +161,7 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
       lessons,
       loading,
       userEnrollments,
+      pendingEnrollments,
       isEnrolledInCourse,
       canAccessCourseContent,
       refreshCourses,
@@ -164,6 +178,7 @@ export function BackofficeProvider({ children }: { children: ReactNode }) {
       lessons,
       loading,
       userEnrollments,
+      pendingEnrollments,
       isEnrolledInCourse,
       canAccessCourseContent,
       refreshCourses,

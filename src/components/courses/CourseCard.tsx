@@ -1,5 +1,8 @@
-import { BookOpen, Lock, ShieldAlert, UsersRound } from 'lucide-react'
+import { useState } from 'react'
+import { BookOpen, Clock, Lock, ShieldAlert, ShoppingCart, UsersRound } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
+import { CheckoutModal } from '@/components/courses/CheckoutModal'
 
 import { CourseActions } from '@/components/courses/CourseActions'
 import { StatusBadge } from '@/components/StatusBadge'
@@ -17,6 +20,7 @@ export function CourseCard({
   canManage = true,
   isLocked = false,
   completedLessons = 0,
+  isPendingApproval = false,
 }: {
   course: Course
   lessonCount: number
@@ -27,8 +31,10 @@ export function CourseCard({
   canManage?: boolean
   isLocked?: boolean
   completedLessons?: number
+  isPendingApproval?: boolean
 }) {
   const navigate = useNavigate()
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const cover = getCourseCoverUrl(course)
   const percent =
     lessonCount > 0 ? Math.min(100, Math.round((completedLessons / lessonCount) * 100)) : 0
@@ -90,15 +96,43 @@ export function CourseCard({
         </p>
 
         {isLocked ? (
-          <div className="mt-4 rounded-xl bg-[#FFF8E7] p-3 border border-[#F5B041]/30">
-            <p className="flex items-center gap-1.5 text-xs font-bold text-[#B7791F]">
-              <ShieldAlert className="h-4 w-4 shrink-0" />
-              Acesso bloqueado
-            </p>
-            <p className="mt-1 text-[11px] font-medium text-[#7A5210] leading-tight">
-              Matrícula não identificada para este treinamento. Entre em contato ou consulte a
-              coordenação para liberar o acesso.
-            </p>
+          <div className="mt-4 space-y-3">
+            {isPendingApproval ? (
+              <div className="rounded-xl bg-[#FFF8E7] p-3 border border-[#F5B041]/30">
+                <p className="flex items-center gap-1.5 text-xs font-bold text-[#D97706]">
+                  <Clock className="h-4 w-4 shrink-0" />
+                  Aguardando aprovação
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-[#92400E] leading-tight">
+                  Sua solicitação de matrícula foi recebida e está em análise pela administração.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl bg-[#FFF8E7] p-3 border border-[#F5B041]/30">
+                <p className="flex items-center gap-1.5 text-xs font-bold text-[#B7791F]">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  Acesso bloqueado
+                </p>
+                <p className="mt-1 text-[11px] font-medium text-[#7A5210] leading-tight">
+                  Adquira este treinamento para desbloquear as aulas, apostilas em PDF e chat com
+                  IA.
+                </p>
+              </div>
+            )}
+
+            {!isPendingApproval && (
+              <Button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setCheckoutOpen(true)
+                }}
+                className="w-full h-10 rounded-xl bg-[#6E9B1F] font-bold text-white shadow-sm hover:bg-[#5C8619]"
+              >
+                <ShoppingCart className="mr-2 h-4 w-4" />
+                Comprar {course.price ? `· R$ ${course.price.toFixed(2).replace('.', ',')}` : ''}
+              </Button>
+            )}
           </div>
         ) : (
           <>
@@ -145,6 +179,8 @@ export function CourseCard({
           </>
         )}
       </div>
+      {/* Modal de Checkout */}
+      <CheckoutModal course={course} open={checkoutOpen} onOpenChange={setCheckoutOpen} />
     </article>
   )
 }

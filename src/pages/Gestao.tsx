@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
+  BookOpen,
   Calendar,
   CheckCircle2,
   Clock,
@@ -8,10 +9,12 @@ import {
   Layers,
   MoreVertical,
   Plus,
+  Power,
   Search,
   Sparkles,
   UserCheck,
   Users,
+  Video,
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
@@ -33,10 +36,11 @@ export default function Gestao() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { courses, lessons } = useBackoffice()
-  const { openCreateCourse } = useCourseModal()
+  const { openNewCourse, openEditCourse } = useCourseModal()
   const role = getUserRole(user)
   const canAccess = role === 'adm' || role === 'coordenador'
 
+  const [togglingCourseId, setTogglingCourseId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'treinamentos' | 'mentorias'>('treinamentos')
   const [mentorships, setMentorships] = useState<Mentorship[]>([])
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
@@ -113,6 +117,46 @@ export default function Gestao() {
     )
   }, [coursesWithMetrics, search])
 
+  // Overview metrics consolidadas
+  const overviewStats = useMemo(() => {
+    const activeCourses = courses.filter((c) => c.status === 'ativo').length
+    const inactiveCourses = courses.filter((c) => c.status === 'inativo').length
+    const totalAulas = lessons.length
+    const activeEnrollments = enrollments.filter((e) => e.status === 'ativo').length
+    const pendingEnrollments = enrollments.filter((e) => e.status === 'pendente').length
+    const scheduledMentorships = mentorships.filter((m) => m.status === 'agendada').length
+    const completedMentorships = mentorships.filter((m) => m.status === 'concluida').length
+    const cancelledMentorships = mentorships.filter((m) => m.status === 'cancelada').length
+
+    return {
+      activeCourses,
+      inactiveCourses,
+      totalCourses: courses.length,
+      totalAulas,
+      activeEnrollments,
+      pendingEnrollments,
+      totalEnrollments: enrollments.length,
+      scheduledMentorships,
+      completedMentorships,
+      cancelledMentorships,
+      totalMentorships: mentorships.length,
+    }
+  }, [courses, lessons, enrollments, mentorships])
+
+  const handleToggleCourseStatus = async (course: Course) => {
+    const nextStatus = course.status === 'ativo' ? 'inativo' : 'ativo'
+    setTogglingCourseId(course.id)
+    try {
+      await pb.collection('courses').update(course.id, { status: nextStatus })
+      // Disparar recarregamento no BackofficeContext atualizando o state local
+      window.dispatchEvent(new CustomEvent('courses-updated'))
+    } catch (err) {
+      console.error('Erro ao alternar status:', err)
+    } finally {
+      setTogglingCourseId(null)
+    }
+  }
+
   const filteredMentorships = useMemo(() => {
     return mentorships.filter((m) => {
       if (mentorshipFilter !== 'todas' && m.status !== mentorshipFilter) return false
@@ -147,7 +191,7 @@ export default function Gestao() {
         action={
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              onClick={openCreateCourse}
+              onClick={openNewCourse}
               className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white shadow-md hover:bg-[#5C8619]"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -164,6 +208,91 @@ export default function Gestao() {
           </div>
         }
       />
+
+      {/* 1. CARDS DE OVERVIEW CONSOLIDADOS */}
+      <section aria-label="Overview da Gestão" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Card 1: Cursos */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(31,56,100,.07)] dark:bg-[#1A334C]">
+          <div className="flex items-center justify-between">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#1F3864] text-white shadow-md">
+              <GraduationCap className="h-6 w-6" />
+            </span>
+            <span className="rounded-full bg-[#EAF0DF] px-2.5 py-0.5 text-[11px] font-bold text-[#527915]">
+              {overviewStats.activeCourses} ativos
+            </span>
+          </div>
+          <p className="mt-4 text-3xl font-bold text-[#1F3864] dark:text-white">
+            {overviewStats.totalCourses}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[#718096] dark:text-white/60">
+            Total de Cursos ·{' '}
+            <span className="font-bold text-[#718096]">
+              {overviewStats.inactiveCourses} inativos
+            </span>
+          </p>
+        </div>
+
+        {/* Card 2: Total Aulas */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(31,56,100,.07)] dark:bg-[#1A334C]">
+          <div className="flex items-center justify-between">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#6E9B1F] text-white shadow-md">
+              <BookOpen className="h-6 w-6" />
+            </span>
+            <span className="rounded-full bg-[#F4F5F3] px-2.5 py-0.5 text-[11px] font-bold text-[#1F3864] dark:bg-white/10 dark:text-white">
+              Conteúdo gravado
+            </span>
+          </div>
+          <p className="mt-4 text-3xl font-bold text-[#1F3864] dark:text-white">
+            {overviewStats.totalAulas}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[#718096] dark:text-white/60">
+            Total de Aulas cadastradas
+          </p>
+        </div>
+
+        {/* Card 3: Matrículas e Alunos */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(31,56,100,.07)] dark:bg-[#1A334C]">
+          <div className="flex items-center justify-between">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#334F68] text-white shadow-md">
+              <Users className="h-6 w-6" />
+            </span>
+            {overviewStats.pendingEnrollments > 0 ? (
+              <span className="rounded-full bg-[#FFF8E7] px-2.5 py-0.5 text-[11px] font-bold text-[#D97706]">
+                {overviewStats.pendingEnrollments} pendentes
+              </span>
+            ) : (
+              <span className="rounded-full bg-[#EAF0DF] px-2.5 py-0.5 text-[11px] font-bold text-[#527915]">
+                100% em dia
+              </span>
+            )}
+          </div>
+          <p className="mt-4 text-3xl font-bold text-[#1F3864] dark:text-white">
+            {overviewStats.activeEnrollments}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[#718096] dark:text-white/60">
+            Matrículas Ativas ({overviewStats.totalEnrollments} no total)
+          </p>
+        </div>
+
+        {/* Card 4: Mentorias por Status */}
+        <div className="rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(31,56,100,.07)] dark:bg-[#1A334C]">
+          <div className="flex items-center justify-between">
+            <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E67E22] text-white shadow-md">
+              <Calendar className="h-6 w-6" />
+            </span>
+            <span className="rounded-full bg-[#EAF2F8] px-2.5 py-0.5 text-[11px] font-bold text-[#2980B9]">
+              {overviewStats.scheduledMentorships} agendadas
+            </span>
+          </div>
+          <p className="mt-4 text-3xl font-bold text-[#1F3864] dark:text-white">
+            {overviewStats.totalMentorships}
+          </p>
+          <p className="mt-1 text-xs font-semibold text-[#718096] dark:text-white/60">
+            {overviewStats.completedMentorships} concluídas · {overviewStats.cancelledMentorships}{' '}
+            canceladas
+          </p>
+        </div>
+      </section>
 
       {/* Navegação entre Visão de Treinamentos e Mentorias */}
       <div className="flex items-center gap-2 border-b border-[#EDF0EA] pb-3 dark:border-white/10">
@@ -297,15 +426,35 @@ export default function Gestao() {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={togglingCourseId === c.id}
+                        onClick={() => void handleToggleCourseStatus(c)}
+                        className="h-8 rounded-xl px-2.5 text-xs font-bold text-[#1F3864] hover:bg-[#EDF0EA] dark:border-white/20 dark:text-white dark:hover:bg-white/10"
+                        title={c.status === 'ativo' ? 'Desativar curso' : 'Ativar curso'}
+                      >
+                        <Power className="mr-1 h-3.5 w-3.5 text-[#6E9B1F]" />
+                        {c.status === 'ativo' ? 'Pausar' : 'Ativar'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => openEditCourse(c)}
+                        className="h-8 rounded-xl px-2.5 text-xs font-bold text-[#1F3864] hover:bg-[#EDF0EA] dark:text-white dark:hover:bg-white/10"
+                        title="Editar treinamento"
+                      >
+                        Editar
+                      </Button>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => navigate(`/cursos/${c.id}`)}
-                        className="h-8 text-xs font-bold text-[#1F3864] hover:bg-[#EDF0EA] dark:text-white dark:hover:bg-white/10"
+                        className="h-8 rounded-xl px-2 text-xs font-bold text-[#1F3864] hover:bg-[#EDF0EA] dark:text-white dark:hover:bg-white/10"
+                        title="Ver página completa do curso"
                       >
-                        Ver Detalhes
-                        <ExternalLink className="ml-1 h-3.5 w-3.5" />
+                        <ExternalLink className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
@@ -389,14 +538,15 @@ export default function Gestao() {
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-end gap-2">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => navigate('/mentorias')}
                         className="h-8 text-xs font-bold text-[#1F3864] hover:bg-[#EDF0EA] dark:text-white dark:hover:bg-white/10"
                       >
-                        Gerenciar
+                        Ver histórico
+                        <ExternalLink className="ml-1 h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>

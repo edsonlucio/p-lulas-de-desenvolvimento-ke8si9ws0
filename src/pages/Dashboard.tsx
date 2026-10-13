@@ -50,6 +50,7 @@ export default function Dashboard() {
     deleteCourse,
     lessonCount,
     canAccessCourseContent,
+    pendingEnrollments,
   } = useBackoffice()
   const { openNewCourse, openEditCourse } = useCourseModal()
   const { toast } = useToast()
@@ -232,6 +233,7 @@ export default function Dashboard() {
                 onDelete={() => setDeleting(course)}
                 canManage={canManage}
                 isLocked={!canAccessCourseContent(course.id)}
+                isPendingApproval={pendingEnrollments.includes(course.id)}
               />
             ))}
           </div>

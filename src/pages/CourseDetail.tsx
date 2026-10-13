@@ -1,15 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowLeft,
+  Award,
   BookOpen,
   Clock3,
   Edit3,
   GraduationCap,
   MoreVertical,
   Plus,
+  Sparkles,
   Trash2,
 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+
+import { CertificateDialog } from '@/components/courses/CertificateDialog'
+import { getCertificateForCourse, issueCertificate } from '@/services/certificates'
+import { getUserCourseProgress } from '@/services/progress'
+import type { CertificateRecord } from '@/types/backoffice'
 
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog'
 import { EmptyState } from '@/components/EmptyState'
@@ -46,6 +53,9 @@ export default function CourseDetail() {
   const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null)
   const [deleteCourseOpen, setDeleteCourseOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [certDialogOpen, setCertDialogOpen] = useState(false)
+  const [certificate, setCertificate] = useState<CertificateRecord | null>(null)
+  const [completedLessonsCount, setCompletedLessonsCount] = useState(0)
   const canManage = canManageCoursesAndLessons(user)
   const canEdit = canEditLesson(user)
 
@@ -57,6 +67,44 @@ export default function CourseDetail() {
     [lessons, id],
   )
   const cover = course ? getCourseCoverUrl(course) : null
+
+  // Carregar progresso do usuário e certificado
+  useEffect(() => {
+    if (!user?.id || !course?.id) return
+    let active = true
+
+    Promise.all([getUserCourseProgress(user.id), getCertificateForCourse(user.id, course.id)])
+      .then(([progressRecords, cert]) => {
+        if (!active) return
+        const courseLessonIds = new Set(courseLessons.map((l) => l.id))
+        const completed = progressRecords.filter(
+          (p) => p.completed && courseLessonIds.has(p.lesson),
+        ).length
+        setCompletedLessonsCount(completed)
+        setCertificate(cert)
+      })
+      .catch((err) => console.warn('Erro ao carregar certificado do curso:', err))
+
+    return () => {
+      active = false
+    }
+  }, [user?.id, course?.id, courseLessons])
+
+  const isCourseFinished =
+    courseLessons.length > 0 && completedLessonsCount === courseLessons.length
+
+  const handleOpenCertificate = async () => {
+    if (!user?.id || !course?.id) return
+    if (!certificate && isCourseFinished) {
+      try {
+        const created = await issueCertificate(user.id, course.id, course.slug)
+        setCertificate(created)
+      } catch (err) {
+        console.error('Erro ao emitir certificado:', err)
+      }
+    }
+    setCertDialogOpen(true)
+  }
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -207,6 +255,32 @@ export default function CourseDetail() {
               {course.students_count} alunos
             </span>
           </div>
+          {/* Card comemorativo de 100% concluído / Certificado */}
+          {hasAccess && (isCourseFinished || certificate) && (
+            <div className="mt-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#EAF0DF] to-[#E2EBD5] p-4 border border-[#6E9B1F]/30 shadow-sm dark:bg-[#1A334C] dark:from-[#172E43] dark:to-[#1A334C]">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#6E9B1F] text-white shadow-md">
+                  <Award className="h-6 w-6" />
+                </span>
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-wider text-[#527915] dark:text-[#A8D052]">
+                    🎉 Treinamento 100% Concluído!
+                  </p>
+                  <p className="text-sm font-bold text-[#1F3864] dark:text-white">
+                    Seu certificado de conclusão oficial está pronto.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => void handleOpenCertificate()}
+                className="h-10 rounded-xl bg-[#6E9B1F] px-4 font-bold text-white hover:bg-[#5C8619] shadow-sm"
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                Visualizar Certificado
+              </Button>
+            </div>
+          )}
+
           <div className="mt-8 flex flex-wrap gap-3">
             {canManage && (
               <>
@@ -415,6 +489,16 @@ export default function CourseDetail() {
         description={`“${course.title}” e todas as suas aulas serão removidos. Esta ação não pode ser desfeita.`}
         onConfirm={() => void confirmCourseDelete()}
         loading={deleting}
+      />
+
+      {/* Modal de Certificado */}
+      <CertificateDialog
+        open={certDialogOpen}
+        onOpenChange={setCertDialogOpen}
+        student={user}
+        course={course}
+        issuedAt={certificate?.issued_at}
+        certificateCode={certificate?.code}
       />
     </div>
   )

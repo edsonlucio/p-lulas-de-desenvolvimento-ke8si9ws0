@@ -34,7 +34,20 @@ import { canManageUsers, ROLE_LABELS, getUserRole } from '@/lib/roles'
 import { getPortugueseError, getPortugueseFieldErrors } from '@/lib/pocketbase/translated-errors'
 import { requestEmailChange } from '@/services/auth'
 import type { UserRecord, UserRole } from '@/types/backoffice'
-import { UsersRound, Shield, CreditCard, Plus, Trash2, Search, GraduationCap } from 'lucide-react'
+import {
+  Award,
+  UsersRound,
+  Shield,
+  CreditCard,
+  Plus,
+  Trash2,
+  Search,
+  GraduationCap,
+  Printer,
+} from 'lucide-react'
+import { CertificateDialog } from '@/components/courses/CertificateDialog'
+import { listUserCertificates } from '@/services/certificates'
+import type { CertificateRecord } from '@/types/backoffice'
 import {
   Dialog,
   DialogContent,
@@ -124,6 +137,12 @@ export default function Settings() {
   const [selectedCourseId, setSelectedCourseId] = useState('')
   const [enrollPurchaseDate, setEnrollPurchaseDate] = useState('')
   const [enrolling, setEnrolling] = useState(false)
+
+  // Meus Certificados
+  const [myCertificates, setMyCertificates] = useState<CertificateRecord[]>([])
+  const [loadingCertificates, setLoadingCertificates] = useState(false)
+  const [selectedCertificate, setSelectedCertificate] = useState<CertificateRecord | null>(null)
+  const [certModalOpen, setCertModalOpen] = useState(false)
   const [searchEnrollment, setSearchEnrollment] = useState('')
 
   const isManager = canManageUsers(user)
@@ -170,6 +189,23 @@ export default function Settings() {
   useEffect(() => {
     if (isManager) void loadEnrollments()
   }, [isManager, loadEnrollments])
+
+  useEffect(() => {
+    if (!user?.id) return
+    let active = true
+    setLoadingCertificates(true)
+    listUserCertificates(user.id)
+      .then((res) => {
+        if (active) setMyCertificates(res)
+      })
+      .catch((err) => console.warn('Erro ao carregar certificados:', err))
+      .finally(() => {
+        if (active) setLoadingCertificates(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [user?.id])
 
   const handleEnrollStudent = async (e: FormEvent) => {
     e.preventDefault()
@@ -228,6 +264,47 @@ export default function Settings() {
         variant: 'destructive',
         title: 'Erro ao atualizar matrícula',
         description: getPortugueseError(err),
+      })
+    }
+  }
+
+  const handleApproveEnrollment = async (enrollmentId: string) => {
+    try {
+      await pb.collection('enrollments').update(enrollmentId, {
+        status: 'ativo',
+        approved_at: new Date().toISOString(),
+      })
+      toast({
+        title: 'Matrícula Aprovada!',
+        description: 'O aluno agora tem acesso liberado ao curso.',
+      })
+      void loadEnrollments()
+      void refreshEnrollments()
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao aprovar matrícula',
+        description: getPortugueseError(error),
+      })
+    }
+  }
+
+  const handleRejectEnrollment = async (enrollmentId: string) => {
+    try {
+      await pb.collection('enrollments').update(enrollmentId, {
+        status: 'recusado',
+      })
+      toast({
+        title: 'Matrícula Recusada',
+        description: 'A solicitação foi recusada.',
+      })
+      void loadEnrollments()
+      void refreshEnrollments()
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao recusar matrícula',
+        description: getPortugueseError(error),
       })
     }
   }
@@ -625,6 +702,83 @@ export default function Settings() {
             </div>
           </form>
 
+          {/* SEÇÃO MEUS CERTIFICADOS */}
+          <div className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7 dark:bg-[#1A334C]">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EAF0DF] text-[#6E9B1F] dark:bg-[#6E9B1F]/20 dark:text-[#A8D052]">
+                  <Award className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-lg font-bold text-[#1F3864] dark:text-white">
+                    Meus Certificados de Conclusão
+                  </h2>
+                  <p className="text-xs font-medium text-[#718096] dark:text-white/60">
+                    Certificados oficiais conquistados ao atingir 100% de conclusão nos treinamentos
+                  </p>
+                </div>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 py-1.5 text-xs font-bold text-[#1F3864] dark:bg-white/10 dark:text-white">
+                <Award className="h-4 w-4 text-[#6E9B1F]" />
+                {myCertificates.length} emitidos
+              </span>
+            </div>
+
+            {loadingCertificates ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-[#6E9B1F]" />
+              </div>
+            ) : myCertificates.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-[#CBD3C3] p-6 text-center dark:border-white/20">
+                <Award className="mx-auto h-8 w-8 text-[#718096]/50 mb-1.5" />
+                <p className="text-sm font-bold text-[#1F3864] dark:text-white">
+                  Nenhum certificado emitido ainda
+                </p>
+                <p className="text-xs text-[#718096] dark:text-white/60 mt-0.5 max-w-sm mx-auto">
+                  Complete todas as aulas de um dos seus cursos cadastrados para desbloquear seu
+                  certificado oficial com selo de autenticidade.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2">
+                {myCertificates.map((cert) => (
+                  <div
+                    key={cert.id}
+                    className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFEFC] p-4 shadow-sm hover:border-[#6E9B1F]/40 transition dark:bg-[#102438] dark:border-white/10"
+                  >
+                    <div>
+                      <span className="rounded-full bg-[#EAF0DF] px-2.5 py-0.5 text-[10px] font-bold text-[#527915]">
+                        Oficial
+                      </span>
+                      <h4 className="mt-2 font-bold text-sm text-[#1F3864] dark:text-white line-clamp-2">
+                        {cert.expand?.course?.title || 'Treinamento'}
+                      </h4>
+                      <p className="mt-1 font-mono text-[10px] text-[#718096] dark:text-white/50">
+                        Cód: {cert.code}
+                      </p>
+                      <p className="text-[11px] font-medium text-[#718096] dark:text-white/60">
+                        Emitido em {new Date(cert.issued_at).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
+                    <div className="mt-3 flex items-center gap-2 pt-2 border-t border-[#EDF0EA] dark:border-white/10">
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelectedCertificate(cert)
+                          setCertModalOpen(true)
+                        }}
+                        className="h-8 rounded-xl bg-[#6E9B1F] px-3 text-xs font-bold text-white hover:bg-[#5C8619]"
+                      >
+                        <Printer className="mr-1.5 h-3.5 w-3.5" />
+                        Imprimir / Ver
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {isManager && (
             <>
               {/* GESTÃO DE PERFIS DE USUÁRIO */}
@@ -781,23 +935,61 @@ export default function Settings() {
                           </div>
 
                           <div className="flex items-center gap-2">
-                            <span
-                              className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
-                                isAtivo
-                                  ? 'bg-[#EAF0DF] text-[#527915]'
-                                  : 'bg-[#FDEDEC] text-[#C0392B]'
-                              }`}
-                            >
-                              {isAtivo ? 'Acesso Ativo' : 'Cancelado'}
-                            </span>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => void handleToggleEnrollmentStatus(enr)}
-                              className="h-8 rounded-xl text-xs font-bold text-[#1F3864]"
-                            >
-                              {isAtivo ? 'Suspender' : 'Reativar'}
-                            </Button>
+                            {enr.status === 'pendente' ? (
+                              <>
+                                <span className="rounded-full bg-[#FFF8E7] px-2.5 py-0.5 text-[11px] font-bold text-[#D97706]">
+                                  Pendente (Aguardando Aprovação)
+                                </span>
+                                <Button
+                                  size="sm"
+                                  onClick={() => void handleApproveEnrollment(enr.id)}
+                                  className="h-8 rounded-xl bg-[#6E9B1F] px-3 text-xs font-bold text-white hover:bg-[#5C8619]"
+                                >
+                                  Aprovar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => void handleRejectEnrollment(enr.id)}
+                                  className="h-8 rounded-xl border-[#C0392B]/30 px-3 text-xs font-bold text-[#C0392B] hover:bg-[#C0392B]/10"
+                                >
+                                  Recusar
+                                </Button>
+                              </>
+                            ) : enr.status === 'recusado' ? (
+                              <>
+                                <span className="rounded-full bg-[#FDEDEC] px-2.5 py-0.5 text-[11px] font-bold text-[#C0392B]">
+                                  Recusada
+                                </span>
+                                <Button
+                                  size="sm"
+                                  onClick={() => void handleApproveEnrollment(enr.id)}
+                                  className="h-8 rounded-xl bg-[#6E9B1F] px-3 text-xs font-bold text-white hover:bg-[#5C8619]"
+                                >
+                                  Aprovar
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <span
+                                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                                    isAtivo
+                                      ? 'bg-[#EAF0DF] text-[#527915]'
+                                      : 'bg-[#FDEDEC] text-[#C0392B]'
+                                  }`}
+                                >
+                                  {isAtivo ? 'Acesso Ativo' : 'Cancelado'}
+                                </span>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => void handleToggleEnrollmentStatus(enr)}
+                                  className="h-8 rounded-xl text-xs font-bold text-[#1F3864]"
+                                >
+                                  {isAtivo ? 'Suspender' : 'Reativar'}
+                                </Button>
+                              </>
+                            )}
                             <Button
                               size="sm"
                               variant="ghost"
@@ -861,6 +1053,16 @@ export default function Settings() {
           </ul>
         </aside>
       </div>
+
+      {/* MODAL DE VISUALIZAÇÃO/IMPRESSÃO DO CERTIFICADO */}
+      <CertificateDialog
+        open={certModalOpen}
+        onOpenChange={setCertModalOpen}
+        student={user}
+        course={selectedCertificate?.expand?.course ?? null}
+        issuedAt={selectedCertificate?.issued_at}
+        certificateCode={selectedCertificate?.code}
+      />
 
       {/* MODAL DE MATRÍCULA */}
       <Dialog open={enrollModalOpen} onOpenChange={setEnrollModalOpen}>

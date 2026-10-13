@@ -14,6 +14,8 @@ import Mentorias from '@/pages/Mentorias'
 import LessonDetail from '@/pages/LessonDetail'
 import Lessons from '@/pages/Lessons'
 import Clube from '@/pages/Clube'
+import Favoritas from '@/pages/Favoritas'
+import Gestao from '@/pages/Gestao'
 import NotFound from '@/pages/NotFound'
 import Settings from '@/pages/Settings'
 import ConfirmEmailChange from '@/pages/auth/ConfirmEmailChange'
@@ -50,7 +52,9 @@ export default function App() {
                 <Route path="/clube" element={<Clube />} />
                 <Route path="/aulas" element={<Lessons />} />
                 <Route path="/aulas/:id" element={<LessonDetail />} />
+                <Route path="/favoritas" element={<Favoritas />} />
                 <Route path="/mentorias" element={<Mentorias />} />
+                <Route path="/gestao" element={<Gestao />} />
                 <Route path="/duvidas" element={<Duvidas />} />
                 <Route path="/configuracoes" element={<Settings />} />
               </Route>

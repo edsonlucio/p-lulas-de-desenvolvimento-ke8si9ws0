@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T03:29:54.563Z",
+  "generatedAt": "2026-10-13T03:51:44.314Z",
   "collections": [
     {
       "name": "users",
@@ -894,6 +894,64 @@
         "CREATE INDEX idx_notifications_user ON notifications (user)",
         "CREATE INDEX idx_notifications_read ON notifications (read)",
         "CREATE INDEX idx_notifications_user_created ON notifications (user, created DESC)"
+      ]
+    },
+    {
+      "name": "certificates",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (student = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "view": "@request.auth.id != '' && (student = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "student",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "course",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "courses"
+        },
+        {
+          "name": "issued_at",
+          "type": "date",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "code",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_certificates_student_course ON certificates (student, course)",
+        "CREATE UNIQUE INDEX idx_certificates_code ON certificates (code)",
+        "CREATE INDEX idx_certificates_student ON certificates (student)"
       ]
     }
   ]

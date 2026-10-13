@@ -18,6 +18,7 @@ import {
   Check,
   Sparkles,
   Loader2,
+  Heart,
 } from 'lucide-react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
@@ -31,8 +32,10 @@ import { useToast } from '@/hooks/use-toast'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { canEditLesson } from '@/lib/roles'
 import { getLessonFileUrl } from '@/services/lessons'
+import { CertificateDialog } from '@/components/courses/CertificateDialog'
+import { getCertificateForCourse, issueCertificate } from '@/services/certificates'
 import { getUserCourseProgress, toggleLessonProgress } from '@/services/progress'
-import type { LessonProgress } from '@/types/backoffice'
+import type { CertificateRecord, LessonProgress } from '@/types/backoffice'
 import { cn } from '@/lib/utils'
 
 export default function LessonDetail() {
@@ -43,6 +46,12 @@ export default function LessonDetail() {
   const { toast } = useToast()
 
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [certDialogOpen, setCertDialogOpen] = useState(false)
+  const [courseCertificate, setCourseCertificate] = useState<CertificateRecord | null>(null)
+
+  // Favorito
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [togglingFavorite, setTogglingFavorite] = useState(false)
 
   // Progresso do aluno
   const [userProgressList, setUserProgressList] = useState<LessonProgress[]>([])
@@ -90,6 +99,57 @@ export default function LessonDetail() {
     }
   }, [user?.id])
 
+  // Buscar certificado do curso se já tiver sido emitido
+  useEffect(() => {
+    if (!user?.id || !course?.id) return
+    let active = true
+    getCertificateForCourse(user.id, course.id)
+      .then((cert) => {
+        if (active) setCourseCertificate(cert)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [user?.id, course?.id])
+
+  // Checar se a aula atual está favoritada pelo usuário
+  useEffect(() => {
+    if (!user?.id || !currentLesson?.id) return
+    let active = true
+    isLessonFavorited(user.id, currentLesson.id)
+      .then((fav) => {
+        if (active) setIsFavorited(fav)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [user?.id, currentLesson?.id])
+
+  const handleToggleFavorite = async () => {
+    if (!user?.id || !currentLesson?.id || togglingFavorite) return
+    setTogglingFavorite(true)
+    try {
+      const next = await toggleFavoriteLesson(user.id, currentLesson.id)
+      setIsFavorited(next)
+      toast({
+        title: next ? 'Adicionada aos favoritos' : 'Removida dos favoritos',
+        description: next
+          ? 'Você pode acessar esta aula rapidamente na tela Favoritas.'
+          : 'A aula foi removida da sua lista de favoritas.',
+      })
+    } catch (err) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao favoritar',
+        description: 'Não foi possível atualizar seus favoritos.',
+      })
+    } finally {
+      setTogglingFavorite(false)
+    }
+  }
+
   // Status de conclusão da aula atual
   const isCurrentLessonCompleted = useMemo(() => {
     if (!currentLesson) return false
@@ -128,10 +188,33 @@ export default function LessonDetail() {
         return [...withoutCurrent, updated]
       })
 
+      // Se acabou de completar a última aula restante (100%), emitir certificado automaticamente!
+      if (nextCompleted && course && courseLessons.length > 0) {
+        const withoutCurrent = userProgressList.filter((p) => p.lesson !== currentLesson.id)
+        const allCompleted = courseLessons.every((l) =>
+          l.id === currentLesson.id
+            ? true
+            : withoutCurrent.some((p) => p.lesson === l.id && p.completed),
+        )
+        if (allCompleted) {
+          try {
+            const cert = await issueCertificate(user.id, course.id, course.slug)
+            setCourseCertificate(cert)
+            setCertDialogOpen(true)
+            toast({
+              title: '🎉 Parabéns! Curso 100% Concluído!',
+              description: 'Seu Certificado Oficial foi emitido com sucesso.',
+            })
+          } catch (certErr) {
+            console.error('Erro ao emitir certificado:', certErr)
+          }
+        }
+      }
+
       toast({
         title: nextCompleted ? 'Aula concluída!' : 'Aula marcada como pendente',
         description: nextCompleted
-          ? `Parabéns! Progresso atualizado para ${courseProgressStats.percentage + (courseProgressStats.total > 0 ? Math.round(100 / courseProgressStats.total) : 0)}% do curso.`
+          ? 'Progresso atualizado com sucesso!'
           : 'Status de conclusão revertido com sucesso.',
       })
     } catch (error) {
@@ -297,6 +380,16 @@ export default function LessonDetail() {
           </div>
 
           <div className="flex items-center gap-3">
+            {courseProgressStats.percentage === 100 && (
+              <Button
+                onClick={() => setCertDialogOpen(true)}
+                className="h-11 rounded-xl bg-[#1F3864] px-4 font-bold text-white shadow-sm hover:bg-[#172E43]"
+              >
+                <Sparkles className="mr-2 h-4 w-4 text-[#A8D052]" />
+                Ver Certificado
+              </Button>
+            )}
+
             <Button
               onClick={handleToggleComplete}
               disabled={togglingProgress}
@@ -596,6 +689,25 @@ export default function LessonDetail() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToggleFavorite}
+              disabled={togglingFavorite}
+              className={cn(
+                'h-10 rounded-xl border px-3 text-xs font-bold transition shadow-sm',
+                isFavorited
+                  ? 'border-[#E74C3C]/30 bg-[#FDEDEC] text-[#E74C3C] hover:bg-[#FADBD8]'
+                  : 'border-[#D9D9D9] text-[#5A6B7E] hover:bg-[#F4F5F3]',
+              )}
+              title={isFavorited ? 'Remover dos favoritos' : 'Salvar nos favoritos'}
+            >
+              <Heart
+                className={cn('h-4 w-4 mr-1.5', isFavorited && 'fill-[#E74C3C] text-[#E74C3C]')}
+              />
+              {isFavorited ? 'Favoritada' : 'Favoritar'}
+            </Button>
+
             {canEdit && (
               <Button
                 variant="outline"
@@ -747,6 +859,16 @@ export default function LessonDetail() {
         }}
         lesson={currentLesson}
         courses={courses}
+      />
+
+      {/* Modal de Certificado de Conclusão */}
+      <CertificateDialog
+        open={certDialogOpen}
+        onOpenChange={setCertDialogOpen}
+        student={user}
+        course={course}
+        issuedAt={courseCertificate?.issued_at}
+        certificateCode={courseCertificate?.code}
       />
     </div>
   )

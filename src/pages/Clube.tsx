@@ -10,6 +10,7 @@ import {
   Edit3,
   Flame,
   HelpCircle,
+  Loader2,
   MessageCircle,
   MessageSquare,
   Plus,

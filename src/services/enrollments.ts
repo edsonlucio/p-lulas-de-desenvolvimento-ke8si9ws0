@@ -79,3 +79,12 @@ export async function reactivateEnrollment(enrollmentId: string): Promise<Enroll
 export async function deleteEnrollment(enrollmentId: string): Promise<boolean> {
   return pb.collection('enrollments').delete(enrollmentId)
 }
+
+export async function requestCourseCheckout(userId: string, courseId: string): Promise<Enrollment> {
+  return enrollStudent({
+    userId,
+    courseId,
+    status: 'pendente',
+    purchasedAt: new Date().toISOString(),
+  })
+}

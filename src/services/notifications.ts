@@ -60,7 +60,9 @@ export async function notifyEnrolledStudents(
     const enrollments = await pb.collection('enrollments').getFullList({
       filter: pb.filter('course = {:course} && status = "ativo"', { course: courseId }),
     })
-    const uniqueUserIds = Array.from(new Set(enrollments.map((e) => (e as { user: string }).user)))
+    const uniqueUserIds = Array.from(
+      new Set(enrollments.map((e) => (e as unknown as { user: string }).user)),
+    )
     await Promise.all(
       uniqueUserIds.map((userId) =>
         createNotification({
