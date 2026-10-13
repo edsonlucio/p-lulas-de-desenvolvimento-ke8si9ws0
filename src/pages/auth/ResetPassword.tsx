@@ -49,8 +49,9 @@ export default function ResetPassword() {
         <ActionState
           status="success"
           title="Senha redefinida"
-          description="Sua nova senha já está ativa. Você pode entrar no backoffice."
+          description="Sua nova senha já está ativa. Você pode entrar."
         >
+          {' '}
           <Button
             asChild
             className="h-11 w-full rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"

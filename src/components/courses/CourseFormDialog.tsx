@@ -122,7 +122,7 @@ export function CourseFormDialog({
       onOpenChange(false)
       toast({
         title: course ? 'Curso atualizado com sucesso' : 'Curso criado com sucesso',
-        description: 'As informações já estão disponíveis no backoffice.',
+        description: 'As informações já estão disponíveis.',
       })
     } catch (error) {
       const fieldErrors = getPortugueseFieldErrors(error)

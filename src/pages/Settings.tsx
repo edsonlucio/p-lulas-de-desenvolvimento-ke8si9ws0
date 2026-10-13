@@ -273,7 +273,7 @@ export default function Settings() {
                 <div>
                   <h2 className="text-lg font-bold text-[#1F3864]">Perfil</h2>
                   <p className="text-xs font-medium text-[#718096]">
-                    Nome e imagem exibidos no backoffice
+                    Nome e imagem exibidos no perfil
                   </p>
                 </div>
               </div>

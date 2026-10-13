@@ -177,9 +177,6 @@ export default function Layout() {
                 <BrandLogo compact />
               </div>
               <div className="hidden lg:block">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[#6E9B1F]">
-                  Backoffice
-                </p>
                 <p className="text-[17px] font-bold text-[#1F3864]">Pílulas de Desenvolvimento</p>
               </div>
               <BrandMark className="h-8 w-8 text-[#6E9B1F] sm:hidden" />

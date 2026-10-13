@@ -43,10 +43,7 @@ export default function Login() {
   }
 
   return (
-    <AuthShell
-      title="Bem-vindo de volta"
-      description="Entre com seu e-mail e senha para acessar o backoffice."
-    >
+    <AuthShell title="Bem-vindo de volta" description="Entre com seu e-mail e senha para acessar.">
       <form onSubmit={submit} className="space-y-5" noValidate>
         <div className="space-y-2">
           <Label htmlFor="email" className="font-bold text-[#1F3864]">

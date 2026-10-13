@@ -89,7 +89,7 @@ export default function Dashboard() {
       await deleteCourse(deleting)
       toast({
         title: 'Curso excluído',
-        description: `${deleting.title} foi removido do backoffice.`,
+        description: `${deleting.title} foi removido.`,
       })
       setDeleting(null)
     } catch (error) {
