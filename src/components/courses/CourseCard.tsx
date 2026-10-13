@@ -13,6 +13,7 @@ export function CourseCard({
   onEdit,
   onToggle,
   onDelete,
+  canManage = true,
 }: {
   course: Course
   lessonCount: number
@@ -20,6 +21,7 @@ export function CourseCard({
   onEdit: () => void
   onToggle: () => void
   onDelete: () => void
+  canManage?: boolean
 }) {
   const navigate = useNavigate()
   const cover = getCourseCoverUrl(course)
@@ -50,7 +52,14 @@ export function CourseCard({
           <h3 className="min-w-0 flex-1 text-[19px] font-bold leading-snug text-[#1F3864] transition group-hover:text-[#527915]">
             {course.title}
           </h3>
-          <CourseActions course={course} onEdit={onEdit} onToggle={onToggle} onDelete={onDelete} />
+          {canManage && (
+            <CourseActions
+              course={course}
+              onEdit={onEdit}
+              onToggle={onToggle}
+              onDelete={onDelete}
+            />
+          )}
         </div>
         <p className="mt-2 line-clamp-2 min-h-10 text-sm font-medium leading-5 text-[#5A6B7E]">
           {course.description}

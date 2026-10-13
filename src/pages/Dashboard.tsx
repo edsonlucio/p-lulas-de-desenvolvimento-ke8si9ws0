@@ -10,6 +10,7 @@ import { useBackoffice } from '@/contexts/BackofficeContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
+import { canManageCoursesAndLessons } from '@/lib/roles'
 import type { Course } from '@/types/backoffice'
 import { cn } from '@/lib/utils'
 
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const [filter, setFilter] = useState<Filter>('todos')
   const [deleting, setDeleting] = useState<Course | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const canManage = canManageCoursesAndLessons(user)
 
   const filtered = useMemo(
     () => courses.filter((course) => filter === 'todos' || course.status === filter),
@@ -193,14 +195,20 @@ export default function Dashboard() {
                 onEdit={() => openEditCourse(course)}
                 onToggle={() => void toggleStatus(course)}
                 onDelete={() => setDeleting(course)}
+                canManage={canManage}
               />
             ))}
           </div>
         ) : (
           <EmptyState
             title="Nenhum curso encontrado neste filtro"
-            description="Experimente outro status ou cadastre um novo curso para continuar."
-            onAction={openNewCourse}
+            description={
+              canManage
+                ? 'Experimente outro status ou cadastre um novo curso para continuar.'
+                : 'Nenhum curso disponível no momento para esta seleção.'
+            }
+            actionLabel={canManage ? 'Novo Curso' : undefined}
+            onAction={canManage ? openNewCourse : undefined}
           />
         )}
       </section>

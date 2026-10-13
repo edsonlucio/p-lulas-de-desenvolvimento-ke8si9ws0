@@ -13,11 +13,13 @@ import {
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
 import { BrandLogo, BrandMark } from '@/components/BrandLogo'
+import { RoleBadge } from '@/components/RoleBadge'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
+import { canManageCoursesAndLessons } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 
 const navigation = [
@@ -100,8 +102,12 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
         <div className="flex items-center gap-3 rounded-xl bg-white/[0.06] p-3">
           <UserAvatar user={user} className="h-9 w-9 shrink-0 border-white/10" />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-bold">{user?.name || 'Administrador'}</p>
-            <p className="truncate text-[11px] font-medium text-white/45">{user?.email}</p>
+            <div className="flex items-center gap-2">
+              <p className="truncate text-sm font-bold">{user?.name || 'Usuário'}</p>
+            </div>
+            <div className="mt-1 flex items-center gap-1.5">
+              <RoleBadge user={user} size="sm" />
+            </div>
           </div>
           <button
             onClick={handleLogout}
@@ -179,14 +185,27 @@ export default function Layout() {
               <BrandMark className="h-8 w-8 text-[#6E9B1F] sm:hidden" />
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-              <Button
-                onClick={openNewCourse}
-                className="h-11 rounded-xl bg-[#6E9B1F] px-3 font-bold text-white shadow-[0_5px_14px_rgba(110,155,31,.22)] transition hover:scale-[1.02] hover:bg-[#5C8619] active:scale-[.98] sm:px-5"
-              >
-                <Plus className="h-[18px] w-[18px] sm:mr-2" />
-                <span className="hidden sm:inline">Novo Curso</span>
-              </Button>
-              <UserAvatar user={user} className="h-10 w-10" />
+              {canManageCoursesAndLessons(user) && (
+                <Button
+                  onClick={openNewCourse}
+                  className="h-11 rounded-xl bg-[#6E9B1F] px-3 font-bold text-white shadow-[0_5px_14px_rgba(110,155,31,.22)] transition hover:scale-[1.02] hover:bg-[#5C8619] active:scale-[.98] sm:px-5"
+                >
+                  <Plus className="h-[18px] w-[18px] sm:mr-2" />
+                  <span className="hidden sm:inline">Novo Curso</span>
+                </Button>
+              )}
+              <div className="hidden sm:flex items-center gap-2 rounded-xl bg-[#F4F5F3] px-3 py-1.5 border border-[#1F3864]/[0.06]">
+                <div className="text-right">
+                  <p className="text-xs font-bold text-[#1F3864] leading-tight truncate max-w-[120px]">
+                    {user?.name || 'Usuário'}
+                  </p>
+                  <RoleBadge user={user} size="sm" className="mt-0.5" />
+                </div>
+                <UserAvatar user={user} className="h-9 w-9" />
+              </div>
+              <div className="sm:hidden">
+                <UserAvatar user={user} className="h-9 w-9" />
+              </div>
             </div>
           </div>
         </header>

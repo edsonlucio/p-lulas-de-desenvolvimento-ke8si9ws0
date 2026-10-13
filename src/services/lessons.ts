@@ -14,12 +14,18 @@ export async function listCourseLessons(courseId: string): Promise<Lesson[]> {
   })
 }
 
+export async function getLesson(id: string): Promise<Lesson> {
+  return pb.collection<Lesson>('lessons').getOne(id, { expand: 'course' })
+}
+
 export async function createLesson(input: LessonInput): Promise<Lesson> {
   return pb.collection<Lesson>('lessons').create({
     title: input.title.trim(),
     course: input.course,
     duration_min: input.durationMin,
     order: input.order,
+    description: input.description ?? '',
+    video_url: input.videoUrl ?? '',
   })
 }
 
@@ -29,6 +35,8 @@ export async function updateLesson(id: string, input: LessonInput): Promise<Less
     course: input.course,
     duration_min: input.durationMin,
     order: input.order,
+    ...(input.description !== undefined ? { description: input.description } : {}),
+    ...(input.videoUrl !== undefined ? { video_url: input.videoUrl } : {}),
   })
 }
 

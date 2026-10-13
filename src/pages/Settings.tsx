@@ -15,16 +15,26 @@ import {
 import { useNavigate } from 'react-router-dom'
 
 import { PageIntro } from '@/components/PageIntro'
+import { RoleBadge } from '@/components/RoleBadge'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useAuth } from '@/contexts/AuthContext'
 import { useToast } from '@/hooks/use-toast'
 import pb from '@/lib/pocketbase/client'
+import { canManageUsers, ROLE_LABELS, getUserRole } from '@/lib/roles'
 import { getPortugueseError, getPortugueseFieldErrors } from '@/lib/pocketbase/translated-errors'
 import { requestEmailChange } from '@/services/auth'
-import type { UserRecord } from '@/types/backoffice'
+import type { UserRecord, UserRole } from '@/types/backoffice'
+import { UsersRound, Shield } from 'lucide-react'
 
 const values = [
   'Clareza e Simplicidade',
@@ -84,11 +94,62 @@ export default function Settings() {
   const [emailErrors, setEmailErrors] = useState<Record<string, string>>({})
   const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<'profile' | 'email' | 'password' | null>(null)
+  const [usersList, setUsersList] = useState<UserRecord[]>([])
+  const [loadingUsers, setLoadingUsers] = useState(false)
+  const [updatingUserRole, setUpdatingUserRole] = useState<string | null>(null)
+
+  const isManager = canManageUsers(user)
+  const currentUserRole = getUserRole(user)
 
   useEffect(() => {
     setName(user?.name ?? '')
     setEmail(user?.email ?? '')
   }, [user])
+
+  useEffect(() => {
+    if (!isManager) return
+    let active = true
+    setLoadingUsers(true)
+    pb.collection<UserRecord>('users')
+      .getFullList({ sort: 'name' })
+      .then((list) => {
+        if (active) setUsersList(list)
+      })
+      .catch((err) => {
+        console.error('Falha ao carregar lista de usuários:', err)
+      })
+      .finally(() => {
+        if (active) setLoadingUsers(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [isManager])
+
+  const handleRoleChange = async (targetUserId: string, newRole: UserRole) => {
+    setUpdatingUserRole(targetUserId)
+    try {
+      const updated = await pb.collection<UserRecord>('users').update(targetUserId, {
+        role: newRole,
+      })
+      setUsersList((prev) => prev.map((u) => (u.id === targetUserId ? updated : u)))
+      if (user && user.id === targetUserId) {
+        syncUser(updated)
+      }
+      toast({
+        title: 'Papel atualizado',
+        description: `O perfil do usuário foi alterado para ${ROLE_LABELS[newRole]}.`,
+      })
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Erro ao alterar papel',
+        description: getPortugueseError(error),
+      })
+    } finally {
+      setUpdatingUserRole(null)
+    }
+  }
 
   useEffect(
     () => () => {
@@ -171,13 +232,11 @@ export default function Settings() {
     if (Object.keys(next).length) return
     setSaving('password')
     try {
-      const updated = await pb
-        .collection<UserRecord>('users')
-        .update(user.id, {
-          oldPassword: currentPassword,
-          password: newPassword,
-          passwordConfirm: confirmPassword,
-        })
+      const updated = await pb.collection<UserRecord>('users').update(user.id, {
+        oldPassword: currentPassword,
+        password: newPassword,
+        passwordConfirm: confirmPassword,
+      })
       syncUser(updated)
       setCurrentPassword('')
       setNewPassword('')
@@ -206,15 +265,23 @@ export default function Settings() {
             onSubmit={saveProfile}
             className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7"
           >
-            <div className="mb-6 flex items-center gap-3">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EAF0DF] text-[#6E9B1F]">
-                <UserRound className="h-5 w-5" />
-              </span>
-              <div>
-                <h2 className="text-lg font-bold text-[#1F3864]">Perfil</h2>
-                <p className="text-xs font-medium text-[#718096]">
-                  Nome e imagem exibidos no backoffice
-                </p>
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EAF0DF] text-[#6E9B1F]">
+                  <UserRound className="h-5 w-5" />
+                </span>
+                <div>
+                  <h2 className="text-lg font-bold text-[#1F3864]">Perfil</h2>
+                  <p className="text-xs font-medium text-[#718096]">
+                    Nome e imagem exibidos no backoffice
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-[#718096] hidden sm:inline">
+                  Seu nível:
+                </span>
+                <RoleBadge role={currentUserRole} />
               </div>
             </div>
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -422,6 +489,88 @@ export default function Settings() {
               </Button>
             </div>
           </form>
+
+          {isManager && (
+            <div className="rounded-2xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.07)] sm:p-7">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#1F3864]/10 text-[#1F3864]">
+                    <Shield className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-bold text-[#1F3864]">
+                      Gerenciamento de Perfis de Usuário
+                    </h2>
+                    <p className="text-xs font-medium text-[#718096]">
+                      Hierarquia de acesso: Adm &gt; Coordenador &gt; Professor &gt; Aluno
+                    </p>
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 py-1.5 text-xs font-bold text-[#1F3864]">
+                  <UsersRound className="h-4 w-4 text-[#6E9B1F]" />
+                  {usersList.length} usuários
+                </span>
+              </div>
+
+              {loadingUsers ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-[#6E9B1F]" />
+                </div>
+              ) : (
+                <div className="divide-y divide-[#EDF0EA]">
+                  {usersList.map((targetUser) => {
+                    const targetRole = getUserRole(targetUser)
+                    const isSelf = targetUser.id === user?.id
+                    return (
+                      <div
+                        key={targetUser.id}
+                        className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <UserAvatar user={targetUser} className="h-10 w-10 shrink-0" />
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="truncate text-sm font-bold text-[#1F3864]">
+                                {targetUser.name || 'Sem nome'}
+                              </p>
+                              {isSelf && (
+                                <span className="rounded bg-[#6E9B1F]/15 px-1.5 py-0.5 text-[10px] font-bold text-[#527915]">
+                                  Você
+                                </span>
+                              )}
+                            </div>
+                            <p className="truncate text-xs font-medium text-[#718096]">
+                              {targetUser.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Select
+                            value={targetRole}
+                            disabled={updatingUserRole === targetUser.id}
+                            onValueChange={(val) =>
+                              handleRoleChange(targetUser.id, val as UserRole)
+                            }
+                          >
+                            <SelectTrigger className="h-10 w-36 rounded-xl border-[#D9D9D9] font-semibold text-xs focus:ring-[#6E9B1F]">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="font-quicksand">
+                              <SelectItem value="adm">Adm</SelectItem>
+                              <SelectItem value="coordenador">Coordenador</SelectItem>
+                              <SelectItem value="professor">Professor</SelectItem>
+                              <SelectItem value="aluno">Aluno</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <RoleBadge role={targetRole} size="sm" />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <aside className="h-fit overflow-hidden rounded-3xl bg-gradient-to-br from-[#1F3864] via-[#203D51] to-[#1E3A12] p-6 text-white shadow-[0_14px_38px_rgba(31,56,100,.18)] sm:p-8 xl:sticky xl:top-24">

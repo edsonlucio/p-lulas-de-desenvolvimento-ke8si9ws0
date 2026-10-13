@@ -9,10 +9,12 @@ import { PageIntro } from '@/components/PageIntro'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/AuthContext'
 import { useBackoffice } from '@/contexts/BackofficeContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
+import { canManageCoursesAndLessons } from '@/lib/roles'
 import { getCourseCoverUrl } from '@/services/courses'
 import type { Course } from '@/types/backoffice'
 
@@ -20,10 +22,12 @@ export default function Courses() {
   const [search, setSearch] = useState('')
   const [deleting, setDeleting] = useState<Course | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const { user } = useAuth()
   const { courses, loading, lessonCount, updateCourseStatus, deleteCourse } = useBackoffice()
   const { openNewCourse, openEditCourse } = useCourseModal()
   const { toast } = useToast()
   const navigate = useNavigate()
+  const canManage = canManageCoursesAndLessons(user)
 
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase('pt-BR')
@@ -140,12 +144,16 @@ export default function Courses() {
                       {course.students_count}
                     </span>
                     <StatusBadge status={course.status} />
-                    <CourseActions
-                      course={course}
-                      onEdit={() => openEditCourse(course)}
-                      onToggle={() => void toggle(course)}
-                      onDelete={() => setDeleting(course)}
-                    />
+                    {canManage ? (
+                      <CourseActions
+                        course={course}
+                        onEdit={() => openEditCourse(course)}
+                        onToggle={() => void toggle(course)}
+                        onDelete={() => setDeleting(course)}
+                      />
+                    ) : (
+                      <span className="w-9" />
+                    )}
                   </div>
                 </div>
               )
@@ -156,9 +164,14 @@ export default function Courses() {
         <EmptyState
           title={search ? 'Nenhum curso corresponde à busca' : 'Nenhum curso cadastrado'}
           description={
-            search ? 'Tente buscar por outro termo.' : 'Cadastre seu primeiro curso para começar.'
+            search
+              ? 'Tente buscar por outro termo.'
+              : canManage
+                ? 'Cadastre seu primeiro curso para começar.'
+                : 'Nenhum curso disponível no momento.'
           }
-          onAction={openNewCourse}
+          actionLabel={canManage ? 'Novo Curso' : undefined}
+          onAction={canManage ? openNewCourse : undefined}
         />
       )}
 

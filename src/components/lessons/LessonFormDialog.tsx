@@ -42,6 +42,8 @@ export function LessonFormDialog({
   const [course, setCourse] = useState('')
   const [duration, setDuration] = useState('30')
   const [order, setOrder] = useState('1')
+  const [description, setDescription] = useState('')
+  const [videoUrl, setVideoUrl] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
   const { refreshLessons } = useBackoffice()
@@ -53,6 +55,8 @@ export function LessonFormDialog({
     setCourse(lesson?.course ?? initialCourseId ?? courses[0]?.id ?? '')
     setDuration(String(lesson?.duration_min ?? 30))
     setOrder(String(lesson?.order ?? 1))
+    setDescription(lesson?.description ?? '')
+    setVideoUrl(lesson?.video_url ?? '')
     setErrors({})
   }, [open, lesson, initialCourseId, courses])
 
@@ -68,7 +72,14 @@ export function LessonFormDialog({
 
     setSaving(true)
     try {
-      const input = { title, course, durationMin: Number(duration), order: Number(order) }
+      const input = {
+        title,
+        course,
+        durationMin: Number(duration),
+        order: Number(order),
+        description: description.trim(),
+        videoUrl: videoUrl.trim(),
+      }
       if (lesson) await updateLesson(lesson.id, input)
       else await createLesson(input)
       await refreshLessons()
@@ -173,6 +184,35 @@ export function LessonFormDialog({
                   <p className="text-xs font-semibold text-[#C0392B]">{errors.order}</p>
                 ) : null}
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lesson-video" className="font-bold text-[#1F3864]">
+                Link do Vídeo (YouTube)
+              </Label>
+              <Input
+                id="lesson-video"
+                value={videoUrl}
+                onChange={(event) => setVideoUrl(event.target.value)}
+                placeholder="Ex.: https://www.youtube.com/watch?v=... ou https://youtu.be/..."
+                className="h-12 rounded-xl border-[#D9D9D9] font-medium focus-visible:ring-[#6E9B1F]"
+              />
+              <p className="text-xs text-[#718096]">
+                Aceita links do YouTube (watch, youtu.be e shorts). Se vazio, exibirá "Vídeo em
+                breve".
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="lesson-description" className="font-bold text-[#1F3864]">
+                Descrição da Aula
+              </Label>
+              <textarea
+                id="lesson-description"
+                rows={3}
+                value={description}
+                onChange={(event) => setDescription(event.target.value)}
+                placeholder="Breve resumo ou objetivos de aprendizagem desta aula..."
+                className="w-full rounded-xl border border-[#D9D9D9] p-3 text-sm font-medium text-[#1F3864] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E9B1F]"
+              />
             </div>
             {errors.form ? (
               <p className="rounded-xl bg-[#C0392B]/10 px-4 py-3 text-sm font-semibold text-[#C0392B]">

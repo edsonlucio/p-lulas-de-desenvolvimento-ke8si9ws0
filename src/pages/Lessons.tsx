@@ -15,12 +15,16 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Link } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { useBackoffice } from '@/contexts/BackofficeContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
+import { canManageCoursesAndLessons, canEditLesson } from '@/lib/roles'
 import type { Lesson } from '@/types/backoffice'
 
 export default function Lessons() {
+  const { user } = useAuth()
   const { courses, lessons, loading, deleteLesson } = useBackoffice()
   const { toast } = useToast()
   const [search, setSearch] = useState('')
@@ -29,6 +33,8 @@ export default function Lessons() {
   const [editing, setEditing] = useState<Lesson | null>(null)
   const [deleting, setDeleting] = useState<Lesson | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const canManage = canManageCoursesAndLessons(user)
+  const canEdit = canEditLesson(user)
 
   const grouped = useMemo(() => {
     const term = search.trim().toLocaleLowerCase('pt-BR')
@@ -72,16 +78,18 @@ export default function Lessons() {
         title="Aulas"
         description="Encontre, organize e atualize as aulas de todos os cursos."
         action={
-          <Button
-            onClick={() => {
-              setEditing(null)
-              setDialogOpen(true)
-            }}
-            className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Aula
-          </Button>
+          canManage ? (
+            <Button
+              onClick={() => {
+                setEditing(null)
+                setDialogOpen(true)
+              }}
+              className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Aula
+            </Button>
+          ) : undefined
         }
       />
       <div className="grid gap-3 rounded-2xl bg-white p-4 shadow-[0_4px_16px_rgba(31,56,100,.06)] sm:grid-cols-[1fr_280px]">
@@ -140,35 +148,51 @@ export default function Lessons() {
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#F1F5EA] text-xs font-bold text-[#6E9B1F]">
                       {String(index + 1).padStart(2, '0')}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-[#1F3864]">{lesson.title}</p>
+                    <Link
+                      to={`/aulas/${lesson.id}`}
+                      className="min-w-0 flex-1 group-hover:text-[#6E9B1F] transition"
+                    >
+                      <p className="font-bold text-[#1F3864] transition group-hover:text-[#6E9B1F]">
+                        {lesson.title}
+                      </p>
                       <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#8290A0]">
                         <Clock3 className="h-3.5 w-3.5" />
                         {lesson.duration_min} minutos · Ordem {lesson.order}
                       </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => {
-                          setEditing(lesson)
-                          setDialogOpen(true)
-                        }}
-                        className="rounded-xl text-[#44546A]"
-                        aria-label="Editar aula"
+                    </Link>
+                    <div className="flex items-center gap-1">
+                      <Link
+                        to={`/aulas/${lesson.id}`}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 text-xs font-bold text-[#1F3864] transition hover:bg-[#EAF0DF] hover:text-[#6E9B1F]"
                       >
-                        <Edit3 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => setDeleting(lesson)}
-                        className="rounded-xl text-[#C0392B] hover:bg-[#C0392B]/10 hover:text-[#C0392B]"
-                        aria-label="Excluir aula"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <PlayCircle className="h-4 w-4 text-[#6E9B1F]" />
+                        <span className="hidden sm:inline">Assistir aula</span>
+                      </Link>
+                      {canEdit && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setEditing(lesson)
+                            setDialogOpen(true)
+                          }}
+                          className="rounded-xl text-[#44546A]"
+                          aria-label="Editar aula"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canManage && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setDeleting(lesson)}
+                          className="rounded-xl text-[#C0392B] hover:bg-[#C0392B]/10 hover:text-[#C0392B]"
+                          aria-label="Excluir aula"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -180,11 +204,15 @@ export default function Lessons() {
         <EmptyState
           title="Nenhuma aula encontrada"
           description="Ajuste os filtros ou crie uma nova aula para continuar."
-          actionLabel="Nova Aula"
-          onAction={() => {
-            setEditing(null)
-            setDialogOpen(true)
-          }}
+          actionLabel={canManage ? 'Nova Aula' : undefined}
+          onAction={
+            canManage
+              ? () => {
+                  setEditing(null)
+                  setDialogOpen(true)
+                }
+              : undefined
+          }
         />
       )}
 

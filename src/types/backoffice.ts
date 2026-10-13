@@ -2,6 +2,8 @@ import type { RecordModel } from 'pocketbase'
 
 export type CourseStatus = 'ativo' | 'inativo'
 
+export type UserRole = 'adm' | 'coordenador' | 'professor' | 'aluno'
+
 export interface Course extends RecordModel {
   title: string
   slug: string
@@ -19,6 +21,8 @@ export interface Lesson extends RecordModel {
   course: string
   duration_min: number
   order: number
+  description?: string
+  video_url?: string
   created: string
   updated: string
   expand?: {
@@ -30,7 +34,20 @@ export interface UserRecord extends RecordModel {
   email: string
   name: string
   avatar: string
+  role?: UserRole
   verified: boolean
+}
+
+export interface LessonChatMessage extends RecordModel {
+  lesson: string
+  user: string
+  message: string
+  created: string
+  updated: string
+  expand?: {
+    user?: UserRecord
+    lesson?: Lesson
+  }
 }
 
 export interface CourseInput {
@@ -47,4 +64,6 @@ export interface LessonInput {
   course: string
   durationMin: number
   order: number
+  description?: string
+  videoUrl?: string
 }

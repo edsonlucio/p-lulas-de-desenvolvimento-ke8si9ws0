@@ -23,16 +23,19 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/contexts/AuthContext'
 import { useBackoffice } from '@/contexts/BackofficeContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
+import { canManageCoursesAndLessons, canEditLesson } from '@/lib/roles'
 import { getCourseCoverUrl } from '@/services/courses'
 import type { Lesson } from '@/types/backoffice'
 
 export default function CourseDetail() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { courses, lessons, loading, updateCourseStatus, deleteCourse, deleteLesson } =
     useBackoffice()
   const { openEditCourse } = useCourseModal()
@@ -42,6 +45,8 @@ export default function CourseDetail() {
   const [deletingLesson, setDeletingLesson] = useState<Lesson | null>(null)
   const [deleteCourseOpen, setDeleteCourseOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const canManage = canManageCoursesAndLessons(user)
+  const canEdit = canEditLesson(user)
 
   const course = courses.find((item) => item.id === id)
   const courseLessons = useMemo(
@@ -154,29 +159,34 @@ export default function CourseDetail() {
         <div className="flex flex-col justify-center p-6 sm:p-9 lg:p-11">
           <div className="flex items-center justify-between gap-3">
             <StatusBadge status={course.status} />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="rounded-xl">
-                  <MoreVertical className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-xl font-quicksand">
-                <DropdownMenuItem onSelect={() => openEditCourse(course)} className="font-semibold">
-                  <Edit3 className="mr-2 h-4 w-4" />
-                  Editar curso
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => void toggleStatus()} className="font-semibold">
-                  {course.status === 'ativo' ? 'Desativar curso' : 'Ativar curso'}
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onSelect={() => setDeleteCourseOpen(true)}
-                  className="font-semibold text-[#C0392B]"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir curso
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {canManage && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="rounded-xl">
+                    <MoreVertical className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-xl font-quicksand">
+                  <DropdownMenuItem
+                    onSelect={() => openEditCourse(course)}
+                    className="font-semibold"
+                  >
+                    <Edit3 className="mr-2 h-4 w-4" />
+                    Editar curso
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => void toggleStatus()} className="font-semibold">
+                    {course.status === 'ativo' ? 'Desativar curso' : 'Ativar curso'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setDeleteCourseOpen(true)}
+                    className="font-semibold text-[#C0392B]"
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Excluir curso
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
           <h1 className="mt-5 text-3xl font-bold tracking-tight text-[#1F3864] sm:text-4xl">
             {course.title}
@@ -195,24 +205,36 @@ export default function CourseDetail() {
             </span>
           </div>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              onClick={() => openEditCourse(course)}
-              variant="outline"
-              className="h-11 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864]"
-            >
-              <Edit3 className="mr-2 h-4 w-4" />
-              Editar informações
-            </Button>
-            <Button
-              onClick={() => {
-                setEditingLesson(null)
-                setLessonDialog(true)
-              }}
-              className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Aula
-            </Button>
+            {canManage && (
+              <>
+                <Button
+                  onClick={() => openEditCourse(course)}
+                  variant="outline"
+                  className="h-11 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864]"
+                >
+                  <Edit3 className="mr-2 h-4 w-4" />
+                  Editar informações
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditingLesson(null)
+                    setLessonDialog(true)
+                  }}
+                  className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Nova Aula
+                </Button>
+              </>
+            )}
+            {courseLessons[0] && (
+              <Button
+                onClick={() => navigate(`/aulas/${courseLessons[0].id}`)}
+                className="h-11 rounded-xl bg-[#1F3864] font-bold text-white hover:bg-[#172E43]"
+              >
+                Começar a assistir
+              </Button>
+            )}
           </div>
         </div>
       </section>
@@ -225,17 +247,19 @@ export default function CourseDetail() {
               Conteúdo organizado na ordem de exibição
             </p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingLesson(null)
-              setLessonDialog(true)
-            }}
-            variant="outline"
-            className="hidden rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] sm:flex"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Nova Aula
-          </Button>
+          {canManage && (
+            <Button
+              onClick={() => {
+                setEditingLesson(null)
+                setLessonDialog(true)
+              }}
+              variant="outline"
+              className="hidden rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] sm:flex"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Nova Aula
+            </Button>
+          )}
         </div>
         {courseLessons.length ? (
           <div className="divide-y divide-[#EDF0EA]">
@@ -244,35 +268,50 @@ export default function CourseDetail() {
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#EAF0DF] text-sm font-bold text-[#6E9B1F]">
                   {String(index + 1).padStart(2, '0')}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[#1F3864]">{lesson.title}</p>
+                <Link
+                  to={`/aulas/${lesson.id}`}
+                  className="min-w-0 flex-1 group-hover:text-[#6E9B1F] transition"
+                >
+                  <p className="font-bold text-[#1F3864] transition group-hover:text-[#6E9B1F]">
+                    {lesson.title}
+                  </p>
                   <p className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#8290A0]">
                     <Clock3 className="h-3.5 w-3.5" />
                     {lesson.duration_min} minutos · Ordem {lesson.order}
                   </p>
-                </div>
-                <div className="flex gap-1 opacity-80 transition sm:opacity-0 sm:group-hover:opacity-100">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => {
-                      setEditingLesson(lesson)
-                      setLessonDialog(true)
-                    }}
-                    className="rounded-xl text-[#44546A]"
-                    aria-label="Editar aula"
+                </Link>
+                <div className="flex items-center gap-1">
+                  <Link
+                    to={`/aulas/${lesson.id}`}
+                    className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#F4F5F3] px-3 text-xs font-bold text-[#1F3864] transition hover:bg-[#EAF0DF] hover:text-[#6E9B1F]"
                   >
-                    <Edit3 className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setDeletingLesson(lesson)}
-                    className="rounded-xl text-[#C0392B] hover:bg-[#C0392B]/10 hover:text-[#C0392B]"
-                    aria-label="Excluir aula"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                    Assistir
+                  </Link>
+                  {canEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditingLesson(lesson)
+                        setLessonDialog(true)
+                      }}
+                      className="rounded-xl text-[#44546A]"
+                      aria-label="Editar aula"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canManage && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setDeletingLesson(lesson)}
+                      className="rounded-xl text-[#C0392B] hover:bg-[#C0392B]/10 hover:text-[#C0392B]"
+                      aria-label="Excluir aula"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -280,12 +319,20 @@ export default function CourseDetail() {
         ) : (
           <EmptyState
             title="Este curso ainda não tem aulas"
-            description="Crie a primeira aula para montar a jornada de aprendizagem."
-            actionLabel="Nova Aula"
-            onAction={() => {
-              setEditingLesson(null)
-              setLessonDialog(true)
-            }}
+            description={
+              canManage
+                ? 'Crie a primeira aula para montar a jornada de aprendizagem.'
+                : 'Ainda não há aulas publicadas para este curso.'
+            }
+            actionLabel={canManage ? 'Nova Aula' : undefined}
+            onAction={
+              canManage
+                ? () => {
+                    setEditingLesson(null)
+                    setLessonDialog(true)
+                  }
+                : undefined
+            }
           />
         )}
       </section>

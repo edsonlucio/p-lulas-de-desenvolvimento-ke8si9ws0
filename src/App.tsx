@@ -9,6 +9,7 @@ import { CourseModalProvider } from '@/contexts/CourseModalContext'
 import CourseDetail from '@/pages/CourseDetail'
 import Courses from '@/pages/Courses'
 import Dashboard from '@/pages/Dashboard'
+import LessonDetail from '@/pages/LessonDetail'
 import Lessons from '@/pages/Lessons'
 import NotFound from '@/pages/NotFound'
 import Settings from '@/pages/Settings'
@@ -44,6 +45,7 @@ export default function App() {
                 <Route path="/cursos" element={<Courses />} />
                 <Route path="/cursos/:id" element={<CourseDetail />} />
                 <Route path="/aulas" element={<Lessons />} />
+                <Route path="/aulas/:id" element={<LessonDetail />} />
                 <Route path="/configuracoes" element={<Settings />} />
               </Route>
             </Route>
