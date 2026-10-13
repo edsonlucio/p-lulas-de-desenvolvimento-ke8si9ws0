@@ -265,12 +265,24 @@ export default function Mentorias() {
                           </span>
                         </p>
                       ) : null}
-                      {mentorship.notes ? (
+                      {mentorship.notes && canManage ? (
                         <p className="mt-1 flex items-start gap-1.5 text-xs font-medium text-[#5A6B7E]">
                           <NotebookPen className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#718096]" />
-                          <span className="line-clamp-2">{mentorship.notes}</span>
+                          <span className="line-clamp-2">Notas internas: {mentorship.notes}</span>
                         </p>
                       ) : null}
+                      {/* Resumo da Mentoria Concluída (especialmente para o Aluno) */}
+                      {mentorship.resumo && (
+                        <div className="mt-2 rounded-xl bg-[#EAF0DF]/60 p-2.5 border border-[#6E9B1F]/30">
+                          <p className="text-[11px] font-bold text-[#527915] flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-[#6E9B1F]" />
+                            Resumo da Sessão:
+                          </p>
+                          <p className="mt-1 text-xs text-[#1F3864] whitespace-pre-line font-medium leading-relaxed">
+                            {mentorship.resumo}
+                          </p>
+                        </div>
+                      )}
                       {/* Materiais de estudo anexados à mentoria */}
                       {(mentorship.study_material || mentorship.study_material_file) && (
                         <div className="mt-2 flex flex-wrap items-center gap-2 rounded-xl bg-[#F8F9F7] p-2 border border-[#EDF0EA]">

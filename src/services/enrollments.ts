@@ -31,6 +31,7 @@ export async function checkUserCourseAccess(userId: string, courseId: string): P
 export async function enrollStudent(data: {
   userId: string
   courseId: string
+  status?: EnrollmentStatus
   purchasedAt?: string
 }): Promise<Enrollment> {
   // Verificar se já existe matrícula (mesmo que cancelada)
@@ -42,8 +43,8 @@ export async function enrollStudent(data: {
       return pb.collection<Enrollment>('enrollments').update(
         existing.id,
         {
-          status: 'ativo',
-          purchased_at: data.purchasedAt || new Date().toISOString(),
+          status: data.status || 'ativo',
+          purchased_at: data.purchasedAt || existing.purchased_at || new Date().toISOString(),
         },
         { expand: 'user,course' },
       )
@@ -56,7 +57,7 @@ export async function enrollStudent(data: {
     {
       user: data.userId,
       course: data.courseId,
-      status: 'ativo',
+      status: data.status || 'ativo',
       purchased_at: data.purchasedAt || new Date().toISOString(),
     },
     { expand: 'user,course' },

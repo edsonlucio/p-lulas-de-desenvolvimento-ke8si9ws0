@@ -2,24 +2,25 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   BookOpen,
   Calendar,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Compass,
   Edit3,
   Flame,
   HelpCircle,
-  Lightbulb,
-  Link2,
-  Loader2,
   MessageCircle,
   MessageSquare,
   Plus,
   Send,
+  ShieldCheck,
   Sparkles,
   Trash2,
   Users,
   Video,
 } from 'lucide-react'
-
+import { ClubeGestaoPanel } from '@/components/clube/ClubeGestaoPanel'
 import { PageIntro } from '@/components/PageIntro'
 import { UserAvatar } from '@/components/UserAvatar'
 import { Button } from '@/components/ui/button'
@@ -141,6 +142,7 @@ export default function Clube() {
 
   const [bookModalOpen, setBookModalOpen] = useState(false)
   const [editingBook, setEditingBook] = useState<ClubeBook | null>(null)
+  const [currentTab, setCurrentTab] = useState<'feed' | 'gestao'>('feed')
 
   // Carregar dados principais
   const loadData = useCallback(async () => {
@@ -346,570 +348,610 @@ export default function Clube() {
         }
       />
 
-      {/* 2. CARD DO LIVRO DO MÊS + DESTAQUE DO PRÓXIMO ENCONTRO VIRTUAL */}
-      {loading ? (
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <Skeleton className="h-64 rounded-3xl" />
-          <Skeleton className="h-64 rounded-3xl" />
+      {/* NAVEGAÇÃO DE ABAS: FEED / GESTÃO */}
+      {canManage && (
+        <div className="flex items-center gap-2 border-b border-[#EDF0EA] pb-3 dark:border-white/10">
+          <button
+            onClick={() => setCurrentTab('feed')}
+            className={cn(
+              'rounded-xl px-4 py-2 text-xs font-bold transition flex items-center gap-2',
+              currentTab === 'feed'
+                ? 'bg-[#1F3864] text-white'
+                : 'bg-white text-[#5A6B7E] hover:bg-[#F4F5F3] dark:bg-white/5 dark:text-white/70',
+            )}
+          >
+            <BookOpen className="h-4 w-4" />
+            Feed & Encontros
+          </button>
+          <button
+            onClick={() => setCurrentTab('gestao')}
+            className={cn(
+              'rounded-xl px-4 py-2 text-xs font-bold transition flex items-center gap-2',
+              currentTab === 'gestao'
+                ? 'bg-[#6E9B1F] text-white'
+                : 'bg-white text-[#5A6B7E] hover:bg-[#F4F5F3] dark:bg-white/5 dark:text-white/70',
+            )}
+          >
+            <ShieldCheck className="h-4 w-4" />
+            Gestão do Clube (Engajamento & Leituras)
+          </button>
         </div>
-      ) : (
-        <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          {/* Card do Livro do Mês */}
-          <div className="relative overflow-hidden rounded-3xl bg-white p-6 shadow-[0_6px_24px_rgba(31,56,100,.08)] sm:p-8 flex flex-col justify-between">
-            <div className="flex flex-col sm:flex-row gap-6 items-start">
-              <div className="relative h-44 w-32 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1F3864] to-[#6E9B1F] shadow-lg flex items-center justify-center text-white text-center p-3">
-                {coverUrl ? (
-                  <img
-                    src={coverUrl}
-                    alt={`Capa do livro ${activeBook?.title}`}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  <div>
-                    <BookOpen className="mx-auto h-8 w-8 opacity-80 mb-2" />
-                    <p className="text-xs font-bold leading-tight line-clamp-3">
-                      {activeBook?.title || 'Metanoia'}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF0DF] px-3 py-1 text-xs font-bold text-[#527915]">
-                    <Sparkles className="h-3.5 w-3.5" />
-                    Livro do mês ({activeBook?.month || 'Ciclo Atual'})
-                  </span>
-                  <span className="rounded-full bg-[#1F3864]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#1F3864]">
-                    1 Livro por Mês
-                  </span>
-                </div>
-
-                <h2 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-[#1F3864]">
-                  {activeBook?.title || 'Metanoia — a chave está sem sua cabeça'}
-                </h2>
-                <p className="mt-1 text-sm font-semibold text-[#6E9B1F]">
-                  Por {activeBook?.author || 'JK Carvalho'}
-                </p>
-
-                <p className="mt-3 text-sm font-medium leading-relaxed text-[#5A6B7E] line-clamp-3">
-                  {activeBook?.description ||
-                    'Uma jornada profunda de renovação da mente, autoconsciência e expansão de potencial humano.'}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-between border-t border-[#EDF0EA] pt-4 gap-3 text-xs font-medium text-[#718096]">
-              <span className="flex items-center gap-1.5">
-                <Compass className="h-4 w-4 text-[#6E9B1F]" />
-                Comunidade ativa com leitura dirigida diária
-              </span>
-              {canManage && activeBook && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setEditingBook(activeBook)
-                    setBookModalOpen(true)
-                  }}
-                  className="h-8 rounded-lg text-xs font-bold text-[#1F3864]"
-                >
-                  <Edit3 className="mr-1.5 h-3.5 w-3.5" />
-                  Editar Livro
-                </Button>
-              )}
-            </div>
-          </div>
-
-          {/* Destaque do Encontro Virtual (03 de Novembro) */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1F3864] via-[#1D3B5C] to-[#172E43] p-6 sm:p-8 text-white shadow-[0_8px_28px_rgba(31,56,100,.14)] flex flex-col justify-between">
-            <div className="flex items-start justify-between">
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-[#A8D052] backdrop-blur-sm">
-                  <Video className="h-3.5 w-3.5" />
-                  Próximo Encontro Virtual
-                </span>
-                <h3 className="mt-3 text-xl sm:text-2xl font-bold text-white leading-snug">
-                  {upcomingMeeting?.title || 'Encontro Virtual de Discussão — Metanoia'}
-                </h3>
-              </div>
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#A8D052]">
-                <Calendar className="h-7 w-7" />
-              </div>
-            </div>
-
-            <div className="my-5 rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <div className="text-center bg-[#6E9B1F] text-white rounded-xl px-3 py-1.5 font-bold">
-                  <p className="text-xl leading-none">
-                    {upcomingMeeting?.date ? new Date(upcomingMeeting.date).getDate() : '03'}
-                  </p>
-                  <p className="text-[10px] uppercase">
-                    {upcomingMeeting?.date
-                      ? new Date(upcomingMeeting.date).toLocaleString('pt-BR', { month: 'short' })
-                      : 'nov'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#A8D052]">
-                    Data e Horário
-                  </p>
-                  <p className="text-sm font-semibold text-white/90">
-                    {upcomingMeeting?.date
-                      ? `${formatMeetingDate(upcomingMeeting.date)} às ${formatMeetingTime(upcomingMeeting.date)}`
-                      : '03 de novembro às 20h00'}
-                  </p>
-                </div>
-              </div>
-              {upcomingMeeting?.description && (
-                <p className="mt-3 text-xs font-medium text-white/75 line-clamp-2">
-                  {upcomingMeeting.description}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              {upcomingMeeting?.meeting_link ? (
-                <a
-                  href={upcomingMeeting.meeting_link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#6E9B1F] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#5C8619]"
-                >
-                  <Video className="h-4 w-4" />
-                  Acessar Sala Virtual
-                </a>
-              ) : (
-                <span className="text-xs font-semibold text-white/60">
-                  Link será liberado próximo ao horário
-                </span>
-              )}
-
-              {canManage && upcomingMeeting && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setEditingMeeting(upcomingMeeting)
-                    setMeetingModalOpen(true)
-                  }}
-                  className="h-8 rounded-lg text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white"
-                >
-                  <Edit3 className="mr-1.5 h-3.5 w-3.5" />
-                  Editar Encontro
-                </Button>
-              )}
-            </div>
-          </div>
-        </section>
       )}
 
-      {/* 3. FEED DIÁRIO NO ESTILO COMUNIDADE DO WHATSAPP */}
-      <section className="space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#25D366]/20 text-[#128C7E]">
-                <MessageCircle className="h-4 w-4" />
-              </span>
-              <h2 className="text-2xl font-bold text-[#1F3864]">Feed Diário da Comunidade</h2>
+      {currentTab === 'gestao' && canManage ? (
+        <ClubeGestaoPanel posts={posts} />
+      ) : (
+        <>
+          {loading ? (
+            <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+              <Skeleton className="h-64 rounded-3xl" />
+              <Skeleton className="h-64 rounded-3xl" />
             </div>
-            <p className="mt-1 text-sm font-medium text-[#718096]">
-              Acompanhe os cards diários de leitura dirigida, perguntas para reflexão e provocações.
-            </p>
-          </div>
+          ) : (
+            <section className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+              {/* Card do Livro do Mês */}
+              <div className="relative overflow-hidden rounded-3xl bg-white p-6 shadow-[0_6px_24px_rgba(31,56,100,.08)] sm:p-8 flex flex-col justify-between">
+                <div className="flex flex-col sm:flex-row gap-6 items-start">
+                  <div className="relative h-44 w-32 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1F3864] to-[#6E9B1F] shadow-lg flex items-center justify-center text-white text-center p-3">
+                    {coverUrl ? (
+                      <img
+                        src={coverUrl}
+                        alt={`Capa do livro ${activeBook?.title}`}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div>
+                        <BookOpen className="mx-auto h-8 w-8 opacity-80 mb-2" />
+                        <p className="text-xs font-bold leading-tight line-clamp-3">
+                          {activeBook?.title || 'Metanoia'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
 
-          {/* Filtros simples */}
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setFilterType('todos')}
-              className={cn(
-                'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm',
-                filterType === 'todos'
-                  ? 'bg-[#1F3864] text-white'
-                  : 'bg-white text-[#5A6B7E] hover:bg-[#F4F5F3]',
-              )}
-            >
-              Todos os cards
-            </button>
-            <button
-              onClick={() => setFilterType('resumo')}
-              className={cn(
-                'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm flex items-center gap-1.5',
-                filterType === 'resumo'
-                  ? 'bg-[#6E9B1F] text-white'
-                  : 'bg-white text-[#527915] hover:bg-[#EAF0DF]',
-              )}
-            >
-              <BookOpen className="h-3 w-3" />
-              Resumo do dia
-            </button>
-            <button
-              onClick={() => setFilterType('pergunta')}
-              className={cn(
-                'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm flex items-center gap-1.5',
-                filterType === 'pergunta'
-                  ? 'bg-[#1F3864] text-white'
-                  : 'bg-white text-[#1F3864] hover:bg-[#F4F5F3]',
-              )}
-            >
-              <HelpCircle className="h-3 w-3" />
-              Pergunta
-            </button>
-            <button
-              onClick={() => setFilterType('provocacao')}
-              className={cn(
-                'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm flex items-center gap-1.5',
-                filterType === 'provocacao'
-                  ? 'bg-[#E67E22] text-white'
-                  : 'bg-white text-[#D35400] hover:bg-[#FDF5E6]',
-              )}
-            >
-              <Flame className="h-3 w-3" />
-              Provocação
-            </button>
-          </div>
-        </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#EAF0DF] px-3 py-1 text-xs font-bold text-[#527915]">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Livro do mês ({activeBook?.month || 'Ciclo Atual'})
+                      </span>
+                      <span className="rounded-full bg-[#1F3864]/10 px-2.5 py-0.5 text-[11px] font-bold text-[#1F3864]">
+                        1 Livro por Mês
+                      </span>
+                    </div>
 
-        {/* Timeline estilo WhatsApp: cards organizados dia a dia */}
-        {groupedPosts.length === 0 ? (
-          <div className="flex min-h-60 flex-col items-center justify-center rounded-3xl border border-dashed border-[#CBD3C3] bg-white/70 p-8 text-center">
-            <MessageSquare className="h-10 w-10 text-[#718096]/50 mb-2" />
-            <h3 className="text-lg font-bold text-[#1F3864]">
-              Nenhum card postado para este filtro
-            </h3>
-            <p className="mt-1 text-sm font-medium text-[#718096]">
-              {canManage
-                ? 'Clique no botão acima para cadastrar a leitura de hoje.'
-                : 'Aguarde as próximas postagens diárias da leitura dirigida.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {groupedPosts.map(([dateKey, dayPosts]) => (
-              <div key={dateKey} className="space-y-4">
-                {/* Separador de Data estilo balão central do WhatsApp */}
-                <div className="flex items-center justify-center">
-                  <span className="rounded-full bg-[#E4E6E3] px-4 py-1 text-xs font-bold text-[#5A6B7E] shadow-sm uppercase tracking-wide">
-                    {formatDayHeader(dateKey)}
-                  </span>
+                    <h2 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-[#1F3864]">
+                      {activeBook?.title || 'Metanoia — a chave está sem sua cabeça'}
+                    </h2>
+                    <p className="mt-1 text-sm font-semibold text-[#6E9B1F]">
+                      Por {activeBook?.author || 'JK Carvalho'}
+                    </p>
+
+                    <p className="mt-3 text-sm font-medium leading-relaxed text-[#5A6B7E] line-clamp-3">
+                      {activeBook?.description ||
+                        'Uma jornada profunda de renovação da mente, autoconsciência e expansão de potencial humano.'}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Grid com até 3 cards do dia */}
-                <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-                  {dayPosts.map((post) => {
-                    const isOpen = Boolean(openComments[post.id])
-                    const postComments = commentsMap[post.id] || []
-
-                    // Cores por tipo
-                    const isResumo = post.type === 'resumo'
-                    const isPergunta = post.type === 'pergunta'
-                    const isProvocacao = post.type === 'provocacao'
-
-                    const typeMeta = isResumo
-                      ? {
-                          tag: 'Resumo da Leitura Dirigida',
-                          badgeClass: 'bg-[#EAF0DF] text-[#527915] border border-[#C9DCB0]',
-                          cardBorder: 'border-l-4 border-l-[#6E9B1F]',
-                          icon: BookOpen,
-                        }
-                      : isPergunta
-                        ? {
-                            tag: 'Pergunta Reflexiva',
-                            badgeClass: 'bg-[#E9EEF4] text-[#1F3864] border border-[#D0DCEB]',
-                            cardBorder: 'border-l-4 border-l-[#1F3864]',
-                            icon: HelpCircle,
-                          }
-                        : {
-                            tag: 'Provocação do Dia',
-                            badgeClass: 'bg-[#FDF2E9] text-[#B9770E] border border-[#FAD7A0]',
-                            cardBorder: 'border-l-4 border-l-[#E67E22]',
-                            icon: Flame,
-                          }
-
-                    const Icon = typeMeta.icon
-
-                    return (
-                      <article
-                        key={post.id}
-                        className={cn(
-                          'flex flex-col justify-between rounded-3xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.06)] transition-all hover:shadow-[0_8px_24px_rgba(31,56,100,.10)]',
-                          typeMeta.cardBorder,
-                        )}
-                      >
-                        <div>
-                          {/* Cabeçalho do Card */}
-                          <div className="flex items-start justify-between gap-2">
-                            <span
-                              className={cn(
-                                'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-xs',
-                                typeMeta.badgeClass,
-                              )}
-                            >
-                              <Icon className="h-3.5 w-3.5" />
-                              {typeMeta.tag}
-                            </span>
-                            <span className="text-[11px] font-semibold text-[#8C9BAE]">
-                              {formatPostTime(post.date)}
-                            </span>
-                          </div>
-
-                          {/* Faixa de Páginas (Destaque Leitura Dirigida) */}
-                          {post.pages_range && (
-                            <div className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#6E9B1F]/15 px-3 py-1 text-xs font-bold text-[#527915]">
-                              <BookOpen className="h-3.5 w-3.5 text-[#6E9B1F]" />
-                              Meta de Leitura: {post.pages_range}
-                            </div>
-                          )}
-
-                          {/* Título do Card */}
-                          <h4 className="mt-3 text-lg font-bold text-[#1F3864] leading-snug">
-                            {post.title}
-                          </h4>
-
-                          {/* Conteúdo Longo / Parágrafos */}
-                          <div className="mt-2 text-sm font-medium leading-relaxed text-[#44546A] whitespace-pre-line">
-                            {post.content}
-                          </div>
-                        </div>
-
-                        {/* Rodapé: Comentários e Ações de Adm */}
-                        <div className="mt-5 border-t border-[#EDF0EA] pt-3">
-                          <div className="flex items-center justify-between">
-                            <button
-                              onClick={() => void toggleComments(post.id)}
-                              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1F3864] transition hover:text-[#6E9B1F]"
-                            >
-                              <MessageSquare className="h-4 w-4 text-[#6E9B1F]" />
-                              <span>
-                                {isOpen ? 'Ocultar comentários' : 'Ver comentários'}
-                                {postComments.length > 0 ? ` (${postComments.length})` : ''}
-                              </span>
-                            </button>
-
-                            {canManage && (
-                              <div className="flex items-center gap-1">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    setEditingPost(post)
-                                    setPostModalOpen(true)
-                                  }}
-                                  className="h-7 w-7 rounded-lg text-[#5A6B7E] hover:bg-[#F4F5F3]"
-                                >
-                                  <Edit3 className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => void handleDeletePost(post.id)}
-                                  className="h-7 w-7 rounded-lg text-[#C0392B] hover:bg-[#C0392B]/10"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Gaveta de Comentários */}
-                          {isOpen && (
-                            <div className="mt-4 space-y-3 rounded-2xl bg-[#F8F9F7] p-3.5 border border-[#EDF0EA]">
-                              {/* Lista de Comentários */}
-                              {postComments.length === 0 ? (
-                                <p className="text-center text-xs font-medium text-[#718096] py-2">
-                                  Nenhum comentário ainda. Seja o primeiro a compartilhar sua
-                                  reflexão!
-                                </p>
-                              ) : (
-                                <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
-                                  {postComments.map((c) => {
-                                    const canDeleteComm =
-                                      canManage || (user && c.author === user.id)
-                                    return (
-                                      <div
-                                        key={c.id}
-                                        className="rounded-xl bg-white p-2.5 shadow-xs border border-[#EDF0EA]/70 text-xs"
-                                      >
-                                        <div className="flex items-center justify-between gap-2">
-                                          <div className="flex items-center gap-2">
-                                            <UserAvatar
-                                              user={c.expand?.author ?? null}
-                                              className="h-6 w-6 text-[10px]"
-                                            />
-                                            <span className="font-bold text-[#1F3864]">
-                                              {c.expand?.author?.name || 'Membro do Clube'}
-                                            </span>
-                                          </div>
-                                          {canDeleteComm && (
-                                            <button
-                                              onClick={() =>
-                                                void handleDeleteComment(post.id, c.id)
-                                              }
-                                              className="text-[#718096] hover:text-[#C0392B]"
-                                              title="Excluir comentário"
-                                            >
-                                              <Trash2 className="h-3 w-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                        <p className="mt-1.5 text-[#44546A] whitespace-pre-line font-medium leading-relaxed">
-                                          {c.text}
-                                        </p>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Caixa para novo comentário */}
-                              {user ? (
-                                <div className="flex items-center gap-2 pt-1">
-                                  <Input
-                                    value={newCommentText[post.id] || ''}
-                                    onChange={(e) =>
-                                      setNewCommentText((prev) => ({
-                                        ...prev,
-                                        [post.id]: e.target.value,
-                                      }))
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === 'Enter') {
-                                        e.preventDefault()
-                                        void handleSendComment(post.id)
-                                      }
-                                    }}
-                                    placeholder="Escreva seu comentário..."
-                                    className="h-9 rounded-xl border-[#D9D9D9] bg-white text-xs font-medium focus-visible:ring-[#6E9B1F]"
-                                  />
-                                  <Button
-                                    size="sm"
-                                    onClick={() => void handleSendComment(post.id)}
-                                    disabled={
-                                      submittingComment === post.id ||
-                                      !newCommentText[post.id]?.trim()
-                                    }
-                                    className="h-9 w-9 rounded-xl bg-[#6E9B1F] p-0 text-white hover:bg-[#5C8619]"
-                                  >
-                                    {submittingComment === post.id ? (
-                                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                      <Send className="h-3.5 w-3.5" />
-                                    )}
-                                  </Button>
-                                </div>
-                              ) : (
-                                <p className="text-center text-xs font-medium text-[#718096]">
-                                  Faça login para comentar.
-                                </p>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      </article>
-                    )
-                  })}
+                <div className="mt-6 flex flex-wrap items-center justify-between border-t border-[#EDF0EA] pt-4 gap-3 text-xs font-medium text-[#718096]">
+                  <span className="flex items-center gap-1.5">
+                    <Compass className="h-4 w-4 text-[#6E9B1F]" />
+                    Comunidade ativa com leitura dirigida diária
+                  </span>
+                  {canManage && activeBook && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingBook(activeBook)
+                        setBookModalOpen(true)
+                      }}
+                      className="h-8 rounded-lg text-xs font-bold text-[#1F3864]"
+                    >
+                      <Edit3 className="mr-1.5 h-3.5 w-3.5" />
+                      Editar Livro
+                    </Button>
+                  )}
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
 
-      {/* 4. HISTÓRICO DE ENCONTROS DO CLUBE */}
-      <section className="rounded-3xl bg-white p-6 shadow-[0_4px_20px_rgba(31,56,100,.06)] sm:p-8">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1F3864]/10 text-[#1F3864]">
-                <Calendar className="h-4 w-4" />
-              </span>
-              <h3 className="text-xl font-bold text-[#1F3864]">Encontros Virtuais de Discussão</h3>
-            </div>
-            <p className="mt-0.5 text-xs font-medium text-[#718096]">
-              Momentos de integração ao vivo para troca de percepções e aplicação prática dos
-              conceitos.
-            </p>
-          </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {meetings.map((m) => {
-            const isAgendado = m.status === 'agendado'
-            const isRealizado = m.status === 'realizado'
-            return (
-              <div
-                key={m.id}
-                className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFDFD] p-4 transition hover:border-[#6E9B1F]/40"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span
-                      className={cn(
-                        'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
-                        isAgendado
-                          ? 'bg-[#EAF0DF] text-[#527915]'
-                          : isRealizado
-                            ? 'bg-[#1F3864] text-white'
-                            : 'bg-[#E4E6E3] text-[#718096]',
-                      )}
-                    >
-                      {m.status}
+              {/* Destaque do Encontro Virtual (03 de Novembro) */}
+              <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1F3864] via-[#1D3B5C] to-[#172E43] p-6 sm:p-8 text-white shadow-[0_8px_28px_rgba(31,56,100,.14)] flex flex-col justify-between">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-[#A8D052] backdrop-blur-sm">
+                      <Video className="h-3.5 w-3.5" />
+                      Próximo Encontro Virtual
                     </span>
-                    <span className="text-xs font-semibold text-[#718096]">
-                      {formatMeetingDate(m.date)}
-                    </span>
+                    <h3 className="mt-3 text-xl sm:text-2xl font-bold text-white leading-snug">
+                      {upcomingMeeting?.title || 'Encontro Virtual de Discussão — Metanoia'}
+                    </h3>
                   </div>
-                  <h4 className="mt-2 font-bold text-[#1F3864] line-clamp-1">{m.title}</h4>
-                  <p className="mt-1 text-xs font-medium text-[#5A6B7E] line-clamp-2">
-                    {m.description || 'Discussão e debate coletivo.'}
-                  </p>
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-white/10 text-[#A8D052]">
+                    <Calendar className="h-7 w-7" />
+                  </div>
                 </div>
 
-                <div className="mt-4 flex items-center justify-between border-t border-[#EDF0EA] pt-3">
-                  {m.meeting_link ? (
+                <div className="my-5 rounded-2xl bg-white/10 p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="text-center bg-[#6E9B1F] text-white rounded-xl px-3 py-1.5 font-bold">
+                      <p className="text-xl leading-none">
+                        {upcomingMeeting?.date ? new Date(upcomingMeeting.date).getDate() : '03'}
+                      </p>
+                      <p className="text-[10px] uppercase">
+                        {upcomingMeeting?.date
+                          ? new Date(upcomingMeeting.date).toLocaleString('pt-BR', {
+                              month: 'short',
+                            })
+                          : 'nov'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#A8D052]">
+                        Data e Horário
+                      </p>
+                      <p className="text-sm font-semibold text-white/90">
+                        {upcomingMeeting?.date
+                          ? `${formatMeetingDate(upcomingMeeting.date)} às ${formatMeetingTime(upcomingMeeting.date)}`
+                          : '03 de novembro às 20h00'}
+                      </p>
+                    </div>
+                  </div>
+                  {upcomingMeeting?.description && (
+                    <p className="mt-3 text-xs font-medium text-white/75 line-clamp-2">
+                      {upcomingMeeting.description}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                  {upcomingMeeting?.meeting_link ? (
                     <a
-                      href={m.meeting_link}
+                      href={upcomingMeeting.meeting_link}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-bold text-[#6E9B1F] hover:underline"
+                      className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#6E9B1F] px-5 text-sm font-bold text-white shadow-md transition hover:bg-[#5C8619]"
                     >
-                      <Video className="h-3.5 w-3.5" />
-                      Entrar no encontro
+                      <Video className="h-4 w-4" />
+                      Acessar Sala Virtual
                     </a>
                   ) : (
-                    <span className="text-xs font-medium text-[#718096]">Sem link</span>
+                    <span className="text-xs font-semibold text-white/60">
+                      Link será liberado próximo ao horário
+                    </span>
                   )}
 
-                  {canManage && (
-                    <div className="flex items-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingMeeting(m)
-                          setMeetingModalOpen(true)
-                        }}
-                        className="h-7 w-7 rounded-lg p-0 text-[#718096] hover:bg-[#F4F5F3]"
-                      >
-                        <Edit3 className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => void handleDeleteMeeting(m.id)}
-                        className="h-7 w-7 rounded-lg p-0 text-[#C0392B] hover:bg-[#C0392B]/10"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
+                  {canManage && upcomingMeeting && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingMeeting(upcomingMeeting)
+                        setMeetingModalOpen(true)
+                      }}
+                      className="h-8 rounded-lg text-xs font-bold text-white/80 hover:bg-white/10 hover:text-white"
+                    >
+                      <Edit3 className="mr-1.5 h-3.5 w-3.5" />
+                      Editar Encontro
+                    </Button>
                   )}
                 </div>
               </div>
-            )
-          })}
-        </div>
-      </section>
+            </section>
+          )}
+
+          {/* 3. FEED DIÁRIO NO ESTILO COMUNIDADE DO WHATSAPP */}
+          <section className="space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#25D366]/20 text-[#128C7E]">
+                    <MessageCircle className="h-4 w-4" />
+                  </span>
+                  <h2 className="text-2xl font-bold text-[#1F3864]">Feed Diário da Comunidade</h2>
+                </div>
+                <p className="mt-1 text-sm font-medium text-[#718096]">
+                  Acompanhe os cards diários de leitura dirigida, perguntas para reflexão e
+                  provocações.
+                </p>
+              </div>
+
+              {/* Filtros simples */}
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => setFilterType('todos')}
+                  className={cn(
+                    'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm',
+                    filterType === 'todos'
+                      ? 'bg-[#1F3864] text-white'
+                      : 'bg-white text-[#5A6B7E] hover:bg-[#F4F5F3]',
+                  )}
+                >
+                  Todos os cards
+                </button>
+                <button
+                  onClick={() => setFilterType('resumo')}
+                  className={cn(
+                    'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm flex items-center gap-1.5',
+                    filterType === 'resumo'
+                      ? 'bg-[#6E9B1F] text-white'
+                      : 'bg-white text-[#527915] hover:bg-[#EAF0DF]',
+                  )}
+                >
+                  <BookOpen className="h-3 w-3" />
+                  Resumo do dia
+                </button>
+                <button
+                  onClick={() => setFilterType('pergunta')}
+                  className={cn(
+                    'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm flex items-center gap-1.5',
+                    filterType === 'pergunta'
+                      ? 'bg-[#1F3864] text-white'
+                      : 'bg-white text-[#1F3864] hover:bg-[#F4F5F3]',
+                  )}
+                >
+                  <HelpCircle className="h-3 w-3" />
+                  Pergunta
+                </button>
+                <button
+                  onClick={() => setFilterType('provocacao')}
+                  className={cn(
+                    'rounded-xl px-3.5 py-1.5 text-xs font-bold transition shadow-sm flex items-center gap-1.5',
+                    filterType === 'provocacao'
+                      ? 'bg-[#E67E22] text-white'
+                      : 'bg-white text-[#D35400] hover:bg-[#FDF5E6]',
+                  )}
+                >
+                  <Flame className="h-3 w-3" />
+                  Provocação
+                </button>
+              </div>
+            </div>
+
+            {/* Timeline estilo WhatsApp: cards organizados dia a dia */}
+            {groupedPosts.length === 0 ? (
+              <div className="flex min-h-60 flex-col items-center justify-center rounded-3xl border border-dashed border-[#CBD3C3] bg-white/70 p-8 text-center">
+                <MessageSquare className="h-10 w-10 text-[#718096]/50 mb-2" />
+                <h3 className="text-lg font-bold text-[#1F3864]">
+                  Nenhum card postado para este filtro
+                </h3>
+                <p className="mt-1 text-sm font-medium text-[#718096]">
+                  {canManage
+                    ? 'Clique no botão acima para cadastrar a leitura de hoje.'
+                    : 'Aguarde as próximas postagens diárias da leitura dirigida.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {groupedPosts.map(([dateKey, dayPosts]) => (
+                  <div key={dateKey} className="space-y-4">
+                    {/* Separador de Data estilo balão central do WhatsApp */}
+                    <div className="flex items-center justify-center">
+                      <span className="rounded-full bg-[#E4E6E3] px-4 py-1 text-xs font-bold text-[#5A6B7E] shadow-sm uppercase tracking-wide">
+                        {formatDayHeader(dateKey)}
+                      </span>
+                    </div>
+
+                    {/* Grid com até 3 cards do dia */}
+                    <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                      {dayPosts.map((post) => {
+                        const isOpen = Boolean(openComments[post.id])
+                        const postComments = commentsMap[post.id] || []
+
+                        // Cores por tipo
+                        const isResumo = post.type === 'resumo'
+                        const isPergunta = post.type === 'pergunta'
+                        const isProvocacao = post.type === 'provocacao'
+
+                        const typeMeta = isResumo
+                          ? {
+                              tag: 'Resumo da Leitura Dirigida',
+                              badgeClass: 'bg-[#EAF0DF] text-[#527915] border border-[#C9DCB0]',
+                              cardBorder: 'border-l-4 border-l-[#6E9B1F]',
+                              icon: BookOpen,
+                            }
+                          : isPergunta
+                            ? {
+                                tag: 'Pergunta Reflexiva',
+                                badgeClass: 'bg-[#E9EEF4] text-[#1F3864] border border-[#D0DCEB]',
+                                cardBorder: 'border-l-4 border-l-[#1F3864]',
+                                icon: HelpCircle,
+                              }
+                            : {
+                                tag: 'Provocação do Dia',
+                                badgeClass: 'bg-[#FDF2E9] text-[#B9770E] border border-[#FAD7A0]',
+                                cardBorder: 'border-l-4 border-l-[#E67E22]',
+                                icon: Flame,
+                              }
+
+                        const Icon = typeMeta.icon
+
+                        return (
+                          <article
+                            key={post.id}
+                            className={cn(
+                              'flex flex-col justify-between rounded-3xl bg-white p-5 shadow-[0_4px_18px_rgba(31,56,100,.06)] transition-all hover:shadow-[0_8px_24px_rgba(31,56,100,.10)]',
+                              typeMeta.cardBorder,
+                            )}
+                          >
+                            <div>
+                              {/* Cabeçalho do Card */}
+                              <div className="flex items-start justify-between gap-2">
+                                <span
+                                  className={cn(
+                                    'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold shadow-xs',
+                                    typeMeta.badgeClass,
+                                  )}
+                                >
+                                  <Icon className="h-3.5 w-3.5" />
+                                  {typeMeta.tag}
+                                </span>
+                                <span className="text-[11px] font-semibold text-[#8C9BAE]">
+                                  {formatPostTime(post.date)}
+                                </span>
+                              </div>
+
+                              {/* Faixa de Páginas (Destaque Leitura Dirigida) */}
+                              {post.pages_range && (
+                                <div className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-[#6E9B1F]/15 px-3 py-1 text-xs font-bold text-[#527915]">
+                                  <BookOpen className="h-3.5 w-3.5 text-[#6E9B1F]" />
+                                  Meta de Leitura: {post.pages_range}
+                                </div>
+                              )}
+
+                              {/* Título do Card */}
+                              <h4 className="mt-3 text-lg font-bold text-[#1F3864] leading-snug">
+                                {post.title}
+                              </h4>
+
+                              {/* Conteúdo Longo / Parágrafos */}
+                              <div className="mt-2 text-sm font-medium leading-relaxed text-[#44546A] whitespace-pre-line">
+                                {post.content}
+                              </div>
+                            </div>
+
+                            {/* Rodapé: Comentários e Ações de Adm */}
+                            <div className="mt-5 border-t border-[#EDF0EA] pt-3">
+                              <div className="flex items-center justify-between">
+                                <button
+                                  onClick={() => void toggleComments(post.id)}
+                                  className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1F3864] transition hover:text-[#6E9B1F]"
+                                >
+                                  <MessageSquare className="h-4 w-4 text-[#6E9B1F]" />
+                                  <span>
+                                    {isOpen ? 'Ocultar comentários' : 'Ver comentários'}
+                                    {postComments.length > 0 ? ` (${postComments.length})` : ''}
+                                  </span>
+                                </button>
+
+                                {canManage && (
+                                  <div className="flex items-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        setEditingPost(post)
+                                        setPostModalOpen(true)
+                                      }}
+                                      className="h-7 w-7 rounded-lg text-[#5A6B7E] hover:bg-[#F4F5F3]"
+                                    >
+                                      <Edit3 className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => void handleDeletePost(post.id)}
+                                      className="h-7 w-7 rounded-lg text-[#C0392B] hover:bg-[#C0392B]/10"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Gaveta de Comentários */}
+                              {isOpen && (
+                                <div className="mt-4 space-y-3 rounded-2xl bg-[#F8F9F7] p-3.5 border border-[#EDF0EA]">
+                                  {/* Lista de Comentários */}
+                                  {postComments.length === 0 ? (
+                                    <p className="text-center text-xs font-medium text-[#718096] py-2">
+                                      Nenhum comentário ainda. Seja o primeiro a compartilhar sua
+                                      reflexão!
+                                    </p>
+                                  ) : (
+                                    <div className="space-y-2.5 max-h-60 overflow-y-auto pr-1">
+                                      {postComments.map((c) => {
+                                        const canDeleteComm =
+                                          canManage || (user && c.author === user.id)
+                                        return (
+                                          <div
+                                            key={c.id}
+                                            className="rounded-xl bg-white p-2.5 shadow-xs border border-[#EDF0EA]/70 text-xs"
+                                          >
+                                            <div className="flex items-center justify-between gap-2">
+                                              <div className="flex items-center gap-2">
+                                                <UserAvatar
+                                                  user={c.expand?.author ?? null}
+                                                  className="h-6 w-6 text-[10px]"
+                                                />
+                                                <span className="font-bold text-[#1F3864]">
+                                                  {c.expand?.author?.name || 'Membro do Clube'}
+                                                </span>
+                                              </div>
+                                              {canDeleteComm && (
+                                                <button
+                                                  onClick={() =>
+                                                    void handleDeleteComment(post.id, c.id)
+                                                  }
+                                                  className="text-[#718096] hover:text-[#C0392B]"
+                                                  title="Excluir comentário"
+                                                >
+                                                  <Trash2 className="h-3 w-3" />
+                                                </button>
+                                              )}
+                                            </div>
+                                            <p className="mt-1.5 text-[#44546A] whitespace-pre-line font-medium leading-relaxed">
+                                              {c.text}
+                                            </p>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  )}
+
+                                  {/* Caixa para novo comentário */}
+                                  {user ? (
+                                    <div className="flex items-center gap-2 pt-1">
+                                      <Input
+                                        value={newCommentText[post.id] || ''}
+                                        onChange={(e) =>
+                                          setNewCommentText((prev) => ({
+                                            ...prev,
+                                            [post.id]: e.target.value,
+                                          }))
+                                        }
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') {
+                                            e.preventDefault()
+                                            void handleSendComment(post.id)
+                                          }
+                                        }}
+                                        placeholder="Escreva seu comentário..."
+                                        className="h-9 rounded-xl border-[#D9D9D9] bg-white text-xs font-medium focus-visible:ring-[#6E9B1F]"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        onClick={() => void handleSendComment(post.id)}
+                                        disabled={
+                                          submittingComment === post.id ||
+                                          !newCommentText[post.id]?.trim()
+                                        }
+                                        className="h-9 w-9 rounded-xl bg-[#6E9B1F] p-0 text-white hover:bg-[#5C8619]"
+                                      >
+                                        {submittingComment === post.id ? (
+                                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                        ) : (
+                                          <Send className="h-3.5 w-3.5" />
+                                        )}
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <p className="text-center text-xs font-medium text-[#718096]">
+                                      Faça login para comentar.
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </article>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* 4. HISTÓRICO DE ENCONTROS DO CLUBE */}
+          <section className="rounded-3xl bg-white p-6 shadow-[0_4px_20px_rgba(31,56,100,.06)] sm:p-8">
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1F3864]/10 text-[#1F3864]">
+                    <Calendar className="h-4 w-4" />
+                  </span>
+                  <h3 className="text-xl font-bold text-[#1F3864]">
+                    Encontros Virtuais de Discussão
+                  </h3>
+                </div>
+                <p className="mt-0.5 text-xs font-medium text-[#718096]">
+                  Momentos de integração ao vivo para troca de percepções e aplicação prática dos
+                  conceitos.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {meetings.map((m) => {
+                const isAgendado = m.status === 'agendado'
+                const isRealizado = m.status === 'realizado'
+                return (
+                  <div
+                    key={m.id}
+                    className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFDFD] p-4 transition hover:border-[#6E9B1F]/40"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <span
+                          className={cn(
+                            'rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                            isAgendado
+                              ? 'bg-[#EAF0DF] text-[#527915]'
+                              : isRealizado
+                                ? 'bg-[#1F3864] text-white'
+                                : 'bg-[#E4E6E3] text-[#718096]',
+                          )}
+                        >
+                          {m.status}
+                        </span>
+                        <span className="text-xs font-semibold text-[#718096]">
+                          {formatMeetingDate(m.date)}
+                        </span>
+                      </div>
+                      <h4 className="mt-2 font-bold text-[#1F3864] line-clamp-1">{m.title}</h4>
+                      <p className="mt-1 text-xs font-medium text-[#5A6B7E] line-clamp-2">
+                        {m.description || 'Discussão e debate coletivo.'}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between border-t border-[#EDF0EA] pt-3">
+                      {m.meeting_link ? (
+                        <a
+                          href={m.meeting_link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-bold text-[#6E9B1F] hover:underline"
+                        >
+                          <Video className="h-3.5 w-3.5" />
+                          Entrar no encontro
+                        </a>
+                      ) : (
+                        <span className="text-xs font-medium text-[#718096]">Sem link</span>
+                      )}
+
+                      {canManage && (
+                        <div className="flex items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => {
+                              setEditingMeeting(m)
+                              setMeetingModalOpen(true)
+                            }}
+                            className="h-7 w-7 rounded-lg p-0 text-[#718096] hover:bg-[#F4F5F3]"
+                          >
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => void handleDeleteMeeting(m.id)}
+                            className="h-7 w-7 rounded-lg p-0 text-[#C0392B] hover:bg-[#C0392B]/10"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        </>
+      )}
 
       {/* MODAL 1: CRIAR/EDITAR CARD DIÁRIO */}
       {canManage && (

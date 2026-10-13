@@ -42,6 +42,9 @@ function toFormData(input: CourseInput, current?: Course): FormData {
   data.append('status', input.status)
   data.append('students_count', String(input.studentsCount ?? current?.students_count ?? 0))
   data.append('order', String(input.order ?? current?.order ?? 0))
+  if (input.price !== undefined) {
+    data.append('price', String(input.price))
+  }
   if (input.thumbnail) {
     data.append('thumbnail', input.thumbnail)
   } else if (input.removeThumbnail) {

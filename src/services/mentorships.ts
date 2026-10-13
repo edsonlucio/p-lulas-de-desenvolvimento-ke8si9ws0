@@ -30,6 +30,7 @@ export async function createMentorship(input: MentorshipInput): Promise<Mentorsh
   if (input.course) form.append('course', input.course)
   if (input.studyMaterial) form.append('study_material', input.studyMaterial.trim())
   if (input.studyMaterialFile) form.append('study_material_file', input.studyMaterialFile)
+  if (input.resumo !== undefined) form.append('resumo', input.resumo.trim())
 
   return pb.collection<Mentorship>('mentorships').create(form, {
     expand: 'student,course',
@@ -46,6 +47,7 @@ export async function updateMentorship(id: string, input: MentorshipInput): Prom
   form.append('notes', input.notes?.trim() || '')
   form.append('course', input.course || '')
   form.append('study_material', input.studyMaterial?.trim() || '')
+  if (input.resumo !== undefined) form.append('resumo', input.resumo.trim())
   if (input.removeStudyMaterialFile) {
     form.append('study_material_file', '')
   } else if (input.studyMaterialFile) {

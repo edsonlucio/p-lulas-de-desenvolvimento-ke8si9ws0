@@ -34,6 +34,7 @@ function toLessonFormData(input: LessonInput): FormData {
   data.append('duration_min', String(input.durationMin))
   data.append('order', String(input.order))
   data.append('description', input.description ?? '')
+  data.append('content', input.content ?? '')
   data.append('video_url', input.videoUrl ?? '')
   data.append('pdf_url', input.pdfUrl ?? '')
   data.append('ppt_url', input.pptUrl ?? '')

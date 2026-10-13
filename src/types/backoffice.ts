@@ -14,6 +14,7 @@ export interface Course extends RecordModel {
   status: CourseStatus
   students_count: number
   order: number
+  price?: number
   created: string
   updated: string
 }
@@ -24,6 +25,7 @@ export interface Lesson extends RecordModel {
   duration_min: number
   order: number
   description?: string
+  content?: string
   video_url?: string
   thumbnail?: string
   video_upload?: string
@@ -83,6 +85,7 @@ export interface Mentorship extends RecordModel {
   study_material?: string
   study_material_file?: string
   course?: string
+  resumo?: string
   created: string
   updated: string
   expand?: {
@@ -102,6 +105,7 @@ export interface MentorshipInput {
   studyMaterialFile?: File | null
   removeStudyMaterialFile?: boolean
   course?: string
+  resumo?: string
 }
 
 export type ClubePostType = 'pergunta' | 'resumo' | 'provocacao'
@@ -157,7 +161,7 @@ export interface ClubeComment extends RecordModel {
   }
 }
 
-export type EnrollmentStatus = 'ativo' | 'cancelado'
+export type EnrollmentStatus = 'ativo' | 'pendente' | 'cancelado'
 
 export interface Enrollment extends RecordModel {
   user: string
@@ -180,6 +184,7 @@ export interface CourseInput {
   removeThumbnail?: boolean
   studentsCount?: number
   order?: number
+  price?: number
 }
 
 export interface LessonInput {
@@ -188,6 +193,7 @@ export interface LessonInput {
   durationMin: number
   order: number
   description?: string
+  content?: string
   videoUrl?: string
   thumbnail?: File | null
   removeThumbnail?: boolean
@@ -199,4 +205,27 @@ export interface LessonInput {
   pptFile?: File | null
   removePptFile?: boolean
   pptUrl?: string
+}
+
+export interface LessonFavorite extends RecordModel {
+  user: string
+  lesson: string
+  created: string
+  updated: string
+  expand?: {
+    lesson?: Lesson
+  }
+}
+
+export type NotificationType = 'aula' | 'clube' | 'mentoria' | 'matricula' | 'sistema'
+
+export interface AppNotification extends RecordModel {
+  user: string
+  title: string
+  message: string
+  type: NotificationType
+  link?: string
+  read?: boolean
+  created: string
+  updated: string
 }

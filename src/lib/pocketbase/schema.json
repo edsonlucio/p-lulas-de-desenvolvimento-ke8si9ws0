@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T02:55:24.457Z",
+  "generatedAt": "2026-10-13T03:29:54.563Z",
   "collections": [
     {
       "name": "users",
@@ -118,6 +118,12 @@
           "required": false,
           "system": false,
           "autodateTriggers": ["onCreate", "onUpdate"]
+        },
+        {
+          "name": "price",
+          "type": "number",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -220,6 +226,12 @@
         },
         {
           "name": "ppt_url",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "content",
           "type": "text",
           "required": false,
           "system": false
@@ -434,6 +446,12 @@
           "required": false,
           "system": false,
           "collectionRef": "courses"
+        },
+        {
+          "name": "resumo",
+          "type": "text",
+          "required": false,
+          "system": false
         }
       ],
       "indexes": [
@@ -711,7 +729,7 @@
       "apiRules": {
         "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
         "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
-        "create": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "create": "@request.auth.id != ''",
         "update": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
         "delete": "@request.auth.id != '' && (@request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
       },
@@ -735,7 +753,7 @@
           "type": "select",
           "required": true,
           "system": false,
-          "selectValues": ["ativo", "cancelado"]
+          "selectValues": ["ativo", "pendente", "cancelado"]
         },
         {
           "name": "purchased_at",
@@ -761,6 +779,121 @@
       "indexes": [
         "CREATE UNIQUE INDEX idx_enrollments_user_course ON enrollments (user, course)",
         "CREATE INDEX idx_enrollments_status ON enrollments (status)"
+      ]
+    },
+    {
+      "name": "lesson_favorites",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && user = @request.auth.id",
+        "view": "@request.auth.id != '' && user = @request.auth.id",
+        "create": "@request.auth.id != '' && @request.body.user = @request.auth.id",
+        "update": "@request.auth.id != '' && user = @request.auth.id",
+        "delete": "@request.auth.id != '' && user = @request.auth.id"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "lesson",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "lessons"
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE UNIQUE INDEX idx_favorites_user_lesson ON lesson_favorites (user, lesson)",
+        "CREATE INDEX idx_favorites_user ON lesson_favorites (user)"
+      ]
+    },
+    {
+      "name": "notifications",
+      "type": "base",
+      "apiRules": {
+        "list": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "view": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "create": "@request.auth.id != ''",
+        "update": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')",
+        "delete": "@request.auth.id != '' && (user = @request.auth.id || @request.auth.role = 'adm' || @request.auth.role = 'coordenador')"
+      },
+      "fields": [
+        {
+          "name": "user",
+          "type": "relation",
+          "required": true,
+          "system": false,
+          "collectionRef": "users"
+        },
+        {
+          "name": "title",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "message",
+          "type": "text",
+          "required": true,
+          "system": false
+        },
+        {
+          "name": "type",
+          "type": "select",
+          "required": true,
+          "system": false,
+          "selectValues": ["aula", "clube", "mentoria", "matricula", "sistema"]
+        },
+        {
+          "name": "link",
+          "type": "text",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "read",
+          "type": "bool",
+          "required": false,
+          "system": false
+        },
+        {
+          "name": "created",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate"]
+        },
+        {
+          "name": "updated",
+          "type": "autodate",
+          "required": false,
+          "system": false,
+          "autodateTriggers": ["onCreate", "onUpdate"]
+        }
+      ],
+      "indexes": [
+        "CREATE INDEX idx_notifications_user ON notifications (user)",
+        "CREATE INDEX idx_notifications_read ON notifications (read)",
+        "CREATE INDEX idx_notifications_user_created ON notifications (user, created DESC)"
       ]
     }
   ]

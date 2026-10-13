@@ -54,6 +54,7 @@ export function MentorshipFormDialog({
   const [notes, setNotes] = useState('')
   const [course, setCourse] = useState('')
   const [studyMaterial, setStudyMaterial] = useState('')
+  const [resumo, setResumo] = useState('')
   const [studyMaterialFile, setStudyMaterialFile] = useState<File | null>(null)
   const [removeFile, setRemoveFile] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -73,6 +74,7 @@ export function MentorshipFormDialog({
     setNotes(mentorship?.notes ?? '')
     setCourse(mentorship?.course ?? '')
     setStudyMaterial(mentorship?.study_material ?? '')
+    setResumo(mentorship?.resumo ?? '')
     setStudyMaterialFile(null)
     setRemoveFile(false)
     setErrors({})
@@ -119,6 +121,7 @@ export function MentorshipFormDialog({
         studyMaterial,
         studyMaterialFile,
         removeStudyMaterialFile: removeFile,
+        resumo,
       }
       if (mentorship) {
         await updateMentorship(mentorship.id, payload)
@@ -270,7 +273,7 @@ export function MentorshipFormDialog({
 
             <div className="space-y-2">
               <Label htmlFor="mentorship-notes" className="font-bold text-[#1F3864]">
-                Observações (opcional)
+                Observações internas (opcional)
               </Label>
               <textarea
                 id="mentorship-notes"
@@ -278,6 +281,20 @@ export function MentorshipFormDialog({
                 value={notes}
                 onChange={(event) => setNotes(event.target.value)}
                 placeholder="Contexto, objetivos ou combinados da sessão..."
+                className="w-full rounded-xl border border-[#D9D9D9] p-3 text-sm font-medium text-[#1F3864] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E9B1F]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="mentorship-resumo" className="font-bold text-[#1F3864]">
+                Resumo da Mentoria (visível ao aluno após a sessão)
+              </Label>
+              <textarea
+                id="mentorship-resumo"
+                rows={3}
+                value={resumo}
+                onChange={(event) => setResumo(event.target.value)}
+                placeholder="Pontos abordados, orientações práticas, metas acordadas para o aluno..."
                 className="w-full rounded-xl border border-[#D9D9D9] p-3 text-sm font-medium text-[#1F3864] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6E9B1F]"
               />
             </div>
