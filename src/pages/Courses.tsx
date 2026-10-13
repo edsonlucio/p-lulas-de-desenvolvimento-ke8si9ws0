@@ -7,6 +7,7 @@ import { CourseActions } from '@/components/courses/CourseActions'
 import { EmptyState } from '@/components/EmptyState'
 import { PageIntro } from '@/components/PageIntro'
 import { StatusBadge } from '@/components/StatusBadge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAuth } from '@/contexts/AuthContext'
@@ -15,6 +16,8 @@ import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { canManageCoursesAndLessons } from '@/lib/roles'
+import { cn } from '@/lib/utils'
+import { CheckoutModal } from '@/components/courses/CheckoutModal'
 import { getCourseCoverUrl } from '@/services/courses'
 import type { Course } from '@/types/backoffice'
 
@@ -30,7 +33,9 @@ export default function Courses() {
     updateCourseStatus,
     deleteCourse,
     canAccessCourseContent,
+    pendingEnrollments,
   } = useBackoffice()
+  const [checkoutCourse, setCheckoutCourse] = useState<Course | null>(null)
   const { openNewCourse, openEditCourse } = useCourseModal()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -148,8 +153,17 @@ export default function Courses() {
                       <div className="flex items-center gap-2">
                         <h3 className="truncate font-bold text-[#1F3864]">{course.title}</h3>
                         {!hasAccess && (
-                          <span className="shrink-0 rounded-full bg-[#FFF8E7] px-2 py-0.5 text-[10px] font-bold text-[#B7791F] border border-[#F5B041]/40">
-                            Bloqueado
+                          <span
+                            className={cn(
+                              'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold border',
+                              pendingEnrollments.includes(course.id)
+                                ? 'bg-[#FFF8E7] text-[#D97706] border-[#F5B041]/50'
+                                : 'bg-[#FFF8E7] text-[#B7791F] border-[#F5B041]/40',
+                            )}
+                          >
+                            {pendingEnrollments.includes(course.id)
+                              ? 'Aguardando aprovação'
+                              : 'Bloqueado'}
                           </span>
                         )}
                       </div>
@@ -175,6 +189,26 @@ export default function Courses() {
                         onToggle={() => void toggle(course)}
                         onDelete={() => setDeleting(course)}
                       />
+                    ) : !hasAccess ? (
+                      <div
+                        onClick={(e) => {
+                          e.stopPropagation()
+                        }}
+                      >
+                        {pendingEnrollments.includes(course.id) ? (
+                          <span className="rounded-xl bg-[#FFF8E7] px-2.5 py-1 text-[11px] font-bold text-[#D97706] border border-[#F5B041]/30">
+                            Em análise
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() => setCheckoutCourse(course)}
+                            className="h-8 rounded-xl bg-[#6E9B1F] px-3 text-xs font-bold text-white hover:bg-[#5C8619]"
+                          >
+                            Comprar
+                          </Button>
+                        )}
+                      </div>
                     ) : (
                       <span className="w-9" />
                     )}
@@ -210,6 +244,12 @@ export default function Courses() {
         }
         onConfirm={() => void confirmDelete()}
         loading={deleteLoading}
+      />
+
+      <CheckoutModal
+        course={checkoutCourse}
+        open={Boolean(checkoutCourse)}
+        onOpenChange={(open) => !open && setCheckoutCourse(null)}
       />
     </div>
   )

@@ -32,8 +32,10 @@ import { useToast } from '@/hooks/use-toast'
 import { getYouTubeEmbedUrl } from '@/lib/youtube'
 import { canEditLesson } from '@/lib/roles'
 import { getLessonFileUrl } from '@/services/lessons'
+import { CheckoutModal } from '@/components/courses/CheckoutModal'
 import { CertificateDialog } from '@/components/courses/CertificateDialog'
 import { getCertificateForCourse, issueCertificate } from '@/services/certificates'
+import { isLessonFavorited, toggleFavoriteLesson } from '@/services/favorites'
 import { getUserCourseProgress, toggleLessonProgress } from '@/services/progress'
 import type { CertificateRecord, LessonProgress } from '@/types/backoffice'
 import { cn } from '@/lib/utils'
@@ -48,6 +50,7 @@ export default function LessonDetail() {
   const [editDialogOpen, setEditDialogOpen] = useState(false)
   const [certDialogOpen, setCertDialogOpen] = useState(false)
   const [courseCertificate, setCourseCertificate] = useState<CertificateRecord | null>(null)
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false)
 
   // Favorito
   const [isFavorited, setIsFavorited] = useState(false)
@@ -330,15 +333,29 @@ export default function LessonDetail() {
               Ver cursos disponíveis
             </Button>
             {course && (
-              <Button
-                onClick={() => navigate(`/cursos/${course.id}`)}
-                className="h-11 rounded-xl bg-[#1F3864] font-bold text-white hover:bg-[#172E43]"
-              >
-                Detalhes do curso
-              </Button>
+              <>
+                <Button
+                  onClick={() => navigate(`/cursos/${course.id}`)}
+                  variant="outline"
+                  className="h-11 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864]"
+                >
+                  Detalhes do curso
+                </Button>
+                <Button
+                  onClick={() => setCheckoutModalOpen(true)}
+                  className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
+                >
+                  Comprar curso
+                </Button>
+              </>
             )}
           </div>
         </div>
+        <CheckoutModal
+          course={course}
+          open={checkoutModalOpen}
+          onOpenChange={setCheckoutModalOpen}
+        />
       </div>
     )
   }

@@ -11,7 +11,7 @@ export async function listEnrollments(filter?: string): Promise<Enrollment[]> {
 
 export async function listUserEnrollments(userId: string): Promise<Enrollment[]> {
   return pb.collection<Enrollment>('enrollments').getFullList({
-    filter: `user = '${userId}' && status = 'ativo'`,
+    filter: `user = '${userId}'`,
     sort: '-created',
     expand: 'course',
   })

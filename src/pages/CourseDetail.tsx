@@ -36,6 +36,7 @@ import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { canManageCoursesAndLessons, canEditLesson } from '@/lib/roles'
+import { CheckoutModal } from '@/components/courses/CheckoutModal'
 import { getCourseCoverUrl } from '@/services/courses'
 import { getLessonFileUrl } from '@/services/lessons'
 import type { Lesson } from '@/types/backoffice'
@@ -56,12 +57,14 @@ export default function CourseDetail() {
   const [certDialogOpen, setCertDialogOpen] = useState(false)
   const [certificate, setCertificate] = useState<CertificateRecord | null>(null)
   const [completedLessonsCount, setCompletedLessonsCount] = useState(0)
+  const [checkoutModalOpen, setCheckoutModalOpen] = useState(false)
   const canManage = canManageCoursesAndLessons(user)
   const canEdit = canEditLesson(user)
 
-  const { canAccessCourseContent } = useBackoffice()
+  const { canAccessCourseContent, pendingEnrollments } = useBackoffice()
   const course = courses.find((item) => item.id === id)
   const hasAccess = id ? canAccessCourseContent(id) : false
+  const isPendingApproval = id ? pendingEnrollments.includes(id) : false
   const courseLessons = useMemo(
     () => lessons.filter((lesson) => lesson.course === id).sort((a, b) => a.order - b.order),
     [lessons, id],
@@ -322,15 +325,17 @@ export default function CourseDetail() {
             <span className="text-2xl font-bold">🔒</span>
           </div>
           <span className="mt-4 inline-block rounded-full bg-[#FFF8E7] px-4 py-1 text-xs font-bold text-[#B7791F]">
-            Conteúdo exclusivo — adquira o curso
+            {isPendingApproval ? 'Matrícula em análise' : 'Conteúdo exclusivo — adquira o curso'}
           </span>
           <h2 className="mt-3 text-2xl font-bold text-[#1F3864]">
-            Você ainda não possui acesso às aulas deste treinamento
+            {isPendingApproval
+              ? 'Sua solicitação de matrícula está em análise'
+              : 'Você ainda não possui acesso às aulas deste treinamento'}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm font-medium text-[#5A6B7E] leading-relaxed">
-            Para assistir aos vídeos, baixar apostilas em PDF, slides em PPT e participar do chat de
-            dúvidas com o tutor inteligente, é necessário ter a matrícula confirmada pela
-            coordenação da Pílulas de Desenvolvimento.
+            {isPendingApproval
+              ? 'Recebemos seu pedido de matrícula e a administração está confirmando o pagamento. O conteúdo será liberado automaticamente assim que aprovado.'
+              : 'Para assistir aos vídeos, baixar apostilas em PDF, slides em PPT e participar do chat de dúvidas com o tutor inteligente, é necessário ter a matrícula confirmada pela coordenação da Pílulas de Desenvolvimento.'}
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <Button
@@ -340,18 +345,19 @@ export default function CourseDetail() {
             >
               Voltar ao catálogo
             </Button>
-            <Button
-              asChild
-              className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
-            >
-              <a
-                href="https://wa.me/5584999999999?text=Olá! Gostaria de adquirir o curso de "
-                target="_blank"
-                rel="noreferrer"
+            {isPendingApproval ? (
+              <span className="inline-flex h-11 items-center rounded-xl bg-[#FFF8E7] px-5 text-sm font-bold text-[#D97706] border border-[#F5B041]/40">
+                Aguardando aprovação
+              </span>
+            ) : (
+              <Button
+                onClick={() => setCheckoutModalOpen(true)}
+                className="h-11 rounded-xl bg-[#6E9B1F] font-bold text-white hover:bg-[#5C8619]"
               >
-                Falar com a equipe no WhatsApp
-              </a>
-            </Button>
+                Solicitar Matrícula{' '}
+                {course.price ? `· R$ ${course.price.toFixed(2).replace('.', ',')}` : ''}
+              </Button>
+            )}
           </div>
         </section>
       ) : (
@@ -500,6 +506,9 @@ export default function CourseDetail() {
         issuedAt={certificate?.issued_at}
         certificateCode={certificate?.code}
       />
+
+      {/* Modal de Checkout */}
+      <CheckoutModal course={course} open={checkoutModalOpen} onOpenChange={setCheckoutModalOpen} />
     </div>
   )
 }

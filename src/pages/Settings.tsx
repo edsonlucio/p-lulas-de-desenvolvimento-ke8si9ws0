@@ -292,11 +292,11 @@ export default function Settings() {
   const handleRejectEnrollment = async (enrollmentId: string) => {
     try {
       await pb.collection('enrollments').update(enrollmentId, {
-        status: 'recusado',
+        status: 'cancelado',
       })
       toast({
         title: 'Matrícula Recusada',
-        description: 'A solicitação foi recusada.',
+        description: 'A solicitação foi recusada e o status definido como cancelado.',
       })
       void loadEnrollments()
       void refreshEnrollments()
@@ -954,19 +954,6 @@ export default function Settings() {
                                   className="h-8 rounded-xl border-[#C0392B]/30 px-3 text-xs font-bold text-[#C0392B] hover:bg-[#C0392B]/10"
                                 >
                                   Recusar
-                                </Button>
-                              </>
-                            ) : enr.status === 'recusado' ? (
-                              <>
-                                <span className="rounded-full bg-[#FDEDEC] px-2.5 py-0.5 text-[11px] font-bold text-[#C0392B]">
-                                  Recusada
-                                </span>
-                                <Button
-                                  size="sm"
-                                  onClick={() => void handleApproveEnrollment(enr.id)}
-                                  className="h-8 rounded-xl bg-[#6E9B1F] px-3 text-xs font-bold text-white hover:bg-[#5C8619]"
-                                >
-                                  Aprovar
                                 </Button>
                               </>
                             ) : (
