@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MessageSquare,
   Plus,
   Settings,
   ShieldCheck,
@@ -21,6 +22,7 @@ import { BrandLogo, BrandMark } from '@/components/BrandLogo'
 import { GlobalLessonSearch } from '@/components/GlobalLessonSearch'
 import { RoleBadge } from '@/components/RoleBadge'
 import { UserAvatar } from '@/components/UserAvatar'
+import { Watermark } from '@/components/Watermark'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
@@ -39,9 +41,11 @@ const navigation: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard, end: true },
   { label: 'Cursos', to: '/cursos', icon: BookOpen },
   { label: 'Clube das Pílulas', to: '/clube', icon: Bookmark },
+  { label: 'Comunidade', to: '/comunidade', icon: MessageSquare },
   { label: 'Aulas', to: '/aulas', icon: PlayCircle },
   { label: 'Favoritas', to: '/favoritas', icon: Heart },
   { label: 'Mentorias', to: '/mentorias', icon: UsersRound },
+  { label: 'Contatos', to: '/contatos', icon: HelpCircle },
 ]
 const adminNavigation: NavItem[] = [
   { label: 'Gestão', to: '/gestao', icon: ShieldCheck },
@@ -267,6 +271,8 @@ export default function Layout() {
           </footer>
         </div>
       </div>
+      {/* Marca d'água discreta do símbolo da cápsula no canto inferior direito de todas as telas autenticadas */}
+      <Watermark />
     </div>
   )
 }

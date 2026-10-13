@@ -39,6 +39,12 @@ function toLessonFormData(input: LessonInput): FormData {
   data.append('pdf_url', input.pdfUrl ?? '')
   data.append('ppt_url', input.pptUrl ?? '')
 
+  if (input.excelFile) {
+    data.append('excel_file', input.excelFile)
+  } else if (input.removeExcelFile) {
+    data.append('excel_file', '')
+  }
+
   if (input.thumbnail) {
     data.append('thumbnail', input.thumbnail)
   } else if (input.removeThumbnail) {

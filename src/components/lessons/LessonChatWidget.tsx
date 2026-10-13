@@ -145,12 +145,12 @@ export function LessonChatWidget({ lessonId, lessonTitle }: LessonChatWidgetProp
     }
   }, [messages.length, streamingAiText, isThinking, isOpen])
 
-  const handleSendMessage = async (e?: FormEvent) => {
+  const handleSendMessage = async (e?: FormEvent, textOverride?: string) => {
     if (e) e.preventDefault()
-    if (!draft.trim() || !user || sending || isThinking) return
+    const questionText = (textOverride ?? draft).trim()
+    if (!questionText || !user || sending || isThinking) return
 
-    const questionText = draft.trim()
-    setDraft('')
+    if (!textOverride) setDraft('')
     setSending(true)
     setIsThinking(true)
     setStreamingAiText(null)
@@ -366,28 +366,25 @@ export function LessonChatWidget({ lessonId, lessonTitle }: LessonChatWidgetProp
                 </div>
                 <p className="font-bold text-sm text-[#1F3864]">Olá! Eu sou o Tutor Pílulas</p>
                 <p className="text-xs text-[#718096] mt-1.5 leading-relaxed max-w-[280px]">
-                  Ficou com alguma dúvida sobre esta aula? Pergunte aqui e eu respondo com base
-                  direta no conteúdo preparado pela equipe!
+                  Ficou com alguma dúvida sobre esta aula? Clique em uma pergunta pronta abaixo ou
+                  digite sua dúvida:
                 </p>
-                <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      setDraft('Qual é o resumo principal dos pontos abordados nesta aula?')
-                      inputRef.current?.focus()
-                    }}
-                    className="rounded-full border border-[#6E9B1F]/30 bg-white px-3 py-1 text-[11px] font-semibold text-[#1F3864] hover:border-[#6E9B1F] hover:bg-[#F1F5EA] transition"
-                  >
-                    💡 Resumo da aula
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDraft('Como posso aplicar o conteúdo desta aula na prática?')
-                      inputRef.current?.focus()
-                    }}
-                    className="rounded-full border border-[#6E9B1F]/30 bg-white px-3 py-1 text-[11px] font-semibold text-[#1F3864] hover:border-[#6E9B1F] hover:bg-[#F1F5EA] transition"
-                  >
-                    🎯 Aplicação prática
-                  </button>
+                <div className="mt-4 flex flex-wrap justify-center gap-2 max-w-[320px]">
+                  {[
+                    'O que é autoliderança?',
+                    'Resuma esta aula',
+                    'Como aplico isso no meu dia a dia?',
+                    'Quais as ferramentas usadas nesta aula?',
+                  ].map((quickQuestion) => (
+                    <button
+                      key={quickQuestion}
+                      type="button"
+                      onClick={() => void handleSendMessage(undefined, quickQuestion)}
+                      className="rounded-full border border-[#6E9B1F]/40 bg-white px-3 py-1.5 text-[11px] font-bold text-[#1F3864] shadow-xs hover:border-[#6E9B1F] hover:bg-[#F1F5EA] hover:text-[#527915] transition active:scale-95 text-left"
+                    >
+                      💬 {quickQuestion}
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (

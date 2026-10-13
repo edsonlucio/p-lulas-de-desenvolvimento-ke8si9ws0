@@ -10,6 +10,7 @@ import {
   Edit3,
   CheckCircle2,
   Share2,
+  FileSpreadsheet,
   FileText,
   Presentation,
   Download,
@@ -277,6 +278,16 @@ export default function LessonDetail() {
   }, [currentLesson])
   const pptExternalUrl = currentLesson?.ppt_url?.trim() || null
 
+  // Arquivo Excel (upload direto)
+  const excelDirectUrl = useMemo(() => {
+    if (!currentLesson?.excel_file) return null
+    return getLessonFileUrl(currentLesson, currentLesson.excel_file)
+  }, [currentLesson])
+  const excelDownloadUrl = useMemo(() => {
+    if (!currentLesson?.excel_file) return null
+    return getLessonFileUrl(currentLesson, currentLesson.excel_file, { download: true })
+  }, [currentLesson])
+
   const canEdit = canEditLesson(user)
 
   // Rolar para o topo ao trocar de aula
@@ -372,7 +383,7 @@ export default function LessonDetail() {
 
   // Verifica se há algum material disponível além do vídeo principal
   const hasExtraMaterials = Boolean(
-    pdfDirectUrl || pdfExternalUrl || pptDirectUrl || pptExternalUrl,
+    pdfDirectUrl || pdfExternalUrl || pptDirectUrl || pptExternalUrl || excelDirectUrl,
   )
 
   return (
@@ -553,7 +564,53 @@ export default function LessonDetail() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Material em Excel / Planilha como fonte externa */}
+            {excelDirectUrl && (
+              <div className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFDFD] p-5 shadow-sm transition hover:border-[#1E7145]/40 hover:bg-[#F3F9F5]">
+                <div className="flex items-start gap-3.5">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1E7145]/10 text-[#1E7145]">
+                    <FileSpreadsheet className="h-6 w-6" />
+                  </div>
+                  <div className="min-w-0">
+                    <span className="inline-block rounded-md bg-[#1E7145]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#1E7145]">
+                      Planilha (Excel)
+                    </span>
+                    <h3 className="mt-1 font-bold text-[#1F3864]">Planilha de Apoio</h3>
+                    <p className="mt-0.5 text-xs font-medium text-[#718096]">
+                      Fonte externa e tabelas práticas (.xlsx / .csv)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-[#EDF0EA] pt-4">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="h-9 rounded-xl border-[#D9D9D9] font-bold text-[#1F3864] hover:bg-white"
+                  >
+                    <a href={excelDirectUrl} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-1.5 h-3.5 w-3.5 text-[#1E7145]" />
+                      Abrir
+                    </a>
+                  </Button>
+                  {excelDownloadUrl && (
+                    <Button
+                      asChild
+                      size="sm"
+                      className="h-9 rounded-xl bg-[#1E7145] font-bold text-white hover:bg-[#165836]"
+                    >
+                      <a href={excelDownloadUrl} download>
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Baixar
+                      </a>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Material em PDF */}
             {(pdfDirectUrl || pdfExternalUrl) && (
               <div className="flex flex-col justify-between rounded-2xl border border-[#EDF0EA] bg-[#FDFDFD] p-5 shadow-sm transition hover:border-[#C0392B]/40 hover:bg-[#FCF7F7]">

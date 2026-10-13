@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type DragEvent, type FormEvent } from 'rea
 import {
   Clock3,
   FileCode2,
+  FileSpreadsheet,
   FileText,
   Film,
   ImagePlus,
@@ -78,6 +79,10 @@ export function LessonFormDialog({
   const [removePptFile, setRemovePptFile] = useState(false)
   const [pptUrl, setPptUrl] = useState('')
 
+  const [excelFile, setExcelFile] = useState<File | null>(null)
+  const [excelFileName, setExcelFileName] = useState<string | null>(null)
+  const [removeExcelFile, setRemoveExcelFile] = useState(false)
+
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState(false)
 
@@ -85,6 +90,7 @@ export function LessonFormDialog({
   const videoInputRef = useRef<HTMLInputElement>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const pptInputRef = useRef<HTMLInputElement>(null)
+  const excelInputRef = useRef<HTMLInputElement>(null)
 
   const { refreshLessons } = useBackoffice()
   const { toast } = useToast()
@@ -116,6 +122,10 @@ export function LessonFormDialog({
     setRemovePptFile(false)
     setPptFileName(lesson?.ppt_file ? lesson.ppt_file : null)
     setPptUrl(lesson?.ppt_url ?? '')
+
+    setExcelFile(null)
+    setRemoveExcelFile(false)
+    setExcelFileName(lesson?.excel_file ? lesson.excel_file : null)
 
     setErrors({})
   }, [open, lesson, initialCourseId, courses])
@@ -203,6 +213,36 @@ export function LessonFormDialog({
     setErrors((prev) => ({ ...prev, ppt_file: '' }))
   }
 
+  const handleExcelSelect = (file?: File) => {
+    if (!file) return
+    const isExcel =
+      file.name.endsWith('.xlsx') ||
+      file.name.endsWith('.xls') ||
+      file.name.endsWith('.csv') ||
+      file.type === 'application/vnd.ms-excel' ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+      file.type === 'text/csv' ||
+      file.type === 'application/csv'
+    if (!isExcel) {
+      setErrors((prev) => ({
+        ...prev,
+        excel_file: 'Arquivo inválido. Selecione uma planilha Excel (.xlsx, .xls) ou CSV.',
+      }))
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setErrors((prev) => ({
+        ...prev,
+        excel_file: 'A planilha Excel deve ter no máximo 5 MB.',
+      }))
+      return
+    }
+    setExcelFile(file)
+    setExcelFileName(file.name)
+    setRemoveExcelFile(false)
+    setErrors((prev) => ({ ...prev, excel_file: '' }))
+  }
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     const next: Record<string, string> = {}
@@ -232,6 +272,8 @@ export function LessonFormDialog({
         pptFile,
         removePptFile,
         pptUrl: pptUrl.trim(),
+        excelFile,
+        removeExcelFile,
       }
       if (lesson) await updateLesson(lesson.id, input)
       else await createLesson(input)
@@ -674,6 +716,75 @@ export function LessonFormDialog({
                   placeholder="https://docs.google.com/presentation/..."
                   className="h-11 rounded-xl border-[#D9D9D9] bg-white font-medium focus-visible:ring-[#6E9B1F]"
                 />
+              </div>
+            </div>
+
+            {/* Materiais: Planilha Excel como fonte externa */}
+            <div className="space-y-4 rounded-2xl bg-[#F8F9F7] p-4 sm:p-5">
+              <div className="flex items-center gap-2">
+                <FileSpreadsheet className="h-4 w-4 text-[#1E7145]" />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#1F3864]">
+                  Planilha Excel / Fonte Externa (opcional)
+                </h3>
+              </div>
+              <p className="text-xs text-[#718096]">
+                Anexe planilhas (.xlsx, .xls, .csv) como material de apoio e fonte externa da aula.
+              </p>
+
+              <div className="space-y-2">
+                <input
+                  ref={excelInputRef}
+                  type="file"
+                  accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv"
+                  className="hidden"
+                  onChange={(e) => handleExcelSelect(e.target.files?.[0])}
+                />
+                {excelFileName ? (
+                  <div className="flex items-center justify-between rounded-xl bg-white p-3 border border-[#E0E5DC]">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <FileSpreadsheet className="h-5 w-5 shrink-0 text-[#1E7145]" />
+                      <span className="truncate text-xs font-bold text-[#1F3864]">
+                        {excelFileName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => excelInputRef.current?.click()}
+                        className="h-8 rounded-lg text-xs font-bold text-[#1F3864]"
+                      >
+                        Substituir
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setExcelFile(null)
+                          setExcelFileName(null)
+                          setRemoveExcelFile(true)
+                        }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#C0392B] hover:bg-[#C0392B]/10"
+                        title="Remover planilha"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => excelInputRef.current?.click()}
+                    className="h-10 w-full rounded-xl border-dashed border-[#CDD4CA] bg-white text-xs font-bold text-[#1F3864] hover:border-[#1E7145]"
+                  >
+                    <FileSpreadsheet className="mr-2 h-4 w-4 text-[#1E7145]" />
+                    Selecionar planilha Excel (.xlsx, .xls, .csv até 5MB)
+                  </Button>
+                )}
+                {errors.excel_file ? (
+                  <p className="text-xs font-semibold text-[#C0392B]">{errors.excel_file}</p>
+                ) : null}
               </div>
             </div>
 

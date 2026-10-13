@@ -33,6 +33,7 @@ export interface Lesson extends RecordModel {
   pdf_url?: string
   ppt_file?: string
   ppt_url?: string
+  excel_file?: string
   created: string
   updated: string
   expand?: {
@@ -205,6 +206,8 @@ export interface LessonInput {
   pptFile?: File | null
   removePptFile?: boolean
   pptUrl?: string
+  excelFile?: File | null
+  removeExcelFile?: boolean
 }
 
 export interface LessonFavorite extends RecordModel {
@@ -241,4 +244,55 @@ export interface AppNotification extends RecordModel {
   read?: boolean
   created: string
   updated: string
+}
+
+export type CeoMessageStatus = 'nova' | 'em_analise' | 'respondida' | 'arquivada'
+
+export interface CeoMessage extends RecordModel {
+  user: string
+  name: string
+  email: string
+  subject?: string
+  message: string
+  status: CeoMessageStatus
+  reply?: string
+  replied_at?: string
+  channel?: 'form' | 'chat'
+  created: string
+  updated: string
+  expand?: {
+    user?: UserRecord
+  }
+}
+
+export type CommunityPostStatus = 'pendente' | 'aprovado' | 'rejeitado'
+
+export interface CommunityPost extends RecordModel {
+  author: string
+  course?: string
+  title: string
+  content: string
+  status: CommunityPostStatus
+  rejection_reason?: string
+  moderated_by?: string
+  moderated_at?: string
+  created: string
+  updated: string
+  expand?: {
+    author?: UserRecord
+    course?: Course
+    moderated_by?: UserRecord
+  }
+  replies_count?: number
+}
+
+export interface CommunityReply extends RecordModel {
+  post: string
+  author: string
+  content: string
+  created: string
+  updated: string
+  expand?: {
+    author?: UserRecord
+  }
 }
