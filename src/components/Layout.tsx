@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import {
   BookOpen,
   ExternalLink,
+  HelpCircle,
   LayoutDashboard,
   LogOut,
   Menu,
   Plus,
   Settings,
+  UsersRound,
   X,
   PlayCircle,
 } from 'lucide-react'
@@ -19,13 +21,24 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@/contexts/AuthContext'
 import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
-import { canManageCoursesAndLessons } from '@/lib/roles'
+import { canManageCoursesAndLessons, getUserRole } from '@/lib/roles'
 import { cn } from '@/lib/utils'
 
-const navigation = [
+type NavItem = {
+  label: string
+  to: string
+  icon: typeof LayoutDashboard
+  end?: boolean
+}
+
+const navigation: NavItem[] = [
   { label: 'Dashboard', to: '/', icon: LayoutDashboard, end: true },
   { label: 'Cursos', to: '/cursos', icon: BookOpen },
   { label: 'Aulas', to: '/aulas', icon: PlayCircle },
+  { label: 'Mentorias', to: '/mentorias', icon: UsersRound },
+]
+const adminNavigation: NavItem[] = [{ label: 'Dúvidas', to: '/duvidas', icon: HelpCircle }]
+const settingsNavigation: NavItem[] = [
   { label: 'Configurações', to: '/configuracoes', icon: Settings },
 ]
 
@@ -33,6 +46,8 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { toast } = useToast()
+  const role = getUserRole(user)
+  const isAdmin = role === 'adm' || role === 'coordenador'
 
   const handleLogout = () => {
     logout()
@@ -66,35 +81,37 @@ function Sidebar({ mobile = false, close }: { mobile?: boolean; close?: () => vo
           Navegação
         </p>
         <nav className="mt-3 space-y-1.5">
-          {navigation.map(({ label, to, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              onClick={close}
-              className={({ isActive }) =>
-                cn(
-                  'group relative flex min-h-12 items-center gap-3 overflow-hidden rounded-xl px-3.5 text-sm font-semibold transition-all duration-200',
-                  isActive
-                    ? 'bg-[#6E9B1F] text-white shadow-[0_8px_20px_rgba(0,0,0,.16)]'
-                    : 'text-white/65 hover:bg-white/8 hover:text-white',
-                )
-              }
-            >
-              {({ isActive }) => (
-                <>
-                  <span
-                    className={cn(
-                      'absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white transition-transform duration-300',
-                      isActive ? 'scale-y-100' : 'scale-y-0',
-                    )}
-                  />
-                  <Icon className="h-[19px] w-[19px] shrink-0" />
-                  <span>{label}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
+          {[...navigation, ...(isAdmin ? adminNavigation : []), ...settingsNavigation].map(
+            ({ label, to, icon: Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                onClick={close}
+                className={({ isActive }) =>
+                  cn(
+                    'group relative flex min-h-12 items-center gap-3 overflow-hidden rounded-xl px-3.5 text-sm font-semibold transition-all duration-200',
+                    isActive
+                      ? 'bg-[#6E9B1F] text-white shadow-[0_8px_20px_rgba(0,0,0,.16)]'
+                      : 'text-white/65 hover:bg-white/8 hover:text-white',
+                  )
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    <span
+                      className={cn(
+                        'absolute left-0 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-white transition-transform duration-300',
+                        isActive ? 'scale-y-100' : 'scale-y-0',
+                      )}
+                    />
+                    <Icon className="h-[19px] w-[19px] shrink-0" />
+                    <span>{label}</span>
+                  </>
+                )}
+              </NavLink>
+            ),
+          )}
         </nav>
       </div>
 

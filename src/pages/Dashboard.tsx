@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { BookOpenCheck, GraduationCap, LibraryBig } from 'lucide-react'
 
 import { ConfirmDeleteDialog } from '@/components/ConfirmDeleteDialog'
@@ -11,8 +11,9 @@ import { useCourseModal } from '@/contexts/CourseModalContext'
 import { useToast } from '@/hooks/use-toast'
 import { getPortugueseError } from '@/lib/pocketbase/translated-errors'
 import { canManageCoursesAndLessons } from '@/lib/roles'
-import type { Course } from '@/types/backoffice'
+import type { Course, LessonProgress } from '@/types/backoffice'
 import { cn } from '@/lib/utils'
+import { getUserCourseProgress } from '@/services/progress'
 
 type Filter = 'todos' | 'ativo' | 'inativo'
 
@@ -48,7 +49,33 @@ export default function Dashboard() {
   const [filter, setFilter] = useState<Filter>('todos')
   const [deleting, setDeleting] = useState<Course | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
+  const [completedByCourse, setCompletedByCourse] = useState<Record<string, number>>({})
   const canManage = canManageCoursesAndLessons(user)
+
+  const loadProgress = useCallback(async () => {
+    if (!user) {
+      setCompletedByCourse({})
+      return
+    }
+    try {
+      const rows = await getUserCourseProgress(user.id)
+      const completedLessons = rows.filter((row: LessonProgress) => row.completed)
+      const byCourse: Record<string, number> = {}
+      for (const row of completedLessons) {
+        const lessonId = row.lesson
+        const lesson = lessons.find((item) => item.id === lessonId)
+        if (!lesson) continue
+        byCourse[lesson.course] = (byCourse[lesson.course] ?? 0) + 1
+      }
+      setCompletedByCourse(byCourse)
+    } catch {
+      setCompletedByCourse({})
+    }
+  }, [user, lessons])
+
+  useEffect(() => {
+    void loadProgress()
+  }, [loadProgress])
 
   const filtered = useMemo(
     () => courses.filter((course) => filter === 'todos' || course.status === filter),
@@ -191,6 +218,7 @@ export default function Dashboard() {
                 key={course.id}
                 course={course}
                 lessonCount={lessonCount(course.id)}
+                completedLessons={completedByCourse[course.id] ?? 0}
                 index={index}
                 onEdit={() => openEditCourse(course)}
                 onToggle={() => void toggleStatus(course)}

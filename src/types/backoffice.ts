@@ -2,6 +2,8 @@ import type { RecordModel } from 'pocketbase'
 
 export type CourseStatus = 'ativo' | 'inativo'
 
+export type MentorshipStatus = 'agendada' | 'concluida' | 'cancelada'
+
 export type UserRole = 'adm' | 'coordenador' | 'professor' | 'aluno'
 
 export interface Course extends RecordModel {
@@ -69,6 +71,29 @@ export interface LessonChatMessage extends RecordModel {
     user?: UserRecord
     lesson?: Lesson
   }
+}
+
+export interface Mentorship extends RecordModel {
+  student: string
+  topic: string
+  scheduled_at: string
+  status: MentorshipStatus
+  meeting_link?: string
+  notes?: string
+  created: string
+  updated: string
+  expand?: {
+    student?: UserRecord
+  }
+}
+
+export interface MentorshipInput {
+  student: string
+  topic: string
+  scheduledAt: string
+  status: MentorshipStatus
+  meetingLink?: string
+  notes?: string
 }
 
 export interface CourseInput {

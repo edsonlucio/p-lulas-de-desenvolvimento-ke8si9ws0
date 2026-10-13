@@ -14,6 +14,7 @@ export function CourseCard({
   onToggle,
   onDelete,
   canManage = true,
+  completedLessons = 0,
 }: {
   course: Course
   lessonCount: number
@@ -22,9 +23,12 @@ export function CourseCard({
   onToggle: () => void
   onDelete: () => void
   canManage?: boolean
+  completedLessons?: number
 }) {
   const navigate = useNavigate()
   const cover = getCourseCoverUrl(course)
+  const percent =
+    lessonCount > 0 ? Math.min(100, Math.round((completedLessons / lessonCount) * 100)) : 0
 
   return (
     <article
@@ -73,6 +77,36 @@ export function CourseCard({
             <UsersRound className="h-4 w-4 text-[#44546A]" />
             {course.students_count} alunos
           </span>
+        </div>
+        <div className="mt-4">
+          {lessonCount > 0 ? (
+            <>
+              <div className="flex items-center justify-between gap-2 text-xs font-bold">
+                <span className="text-[#718096]">
+                  {completedLessons} de {lessonCount} {lessonCount === 1 ? 'aula' : 'aulas'}{' '}
+                  concluídas
+                </span>
+                <span className="text-[#1F3864]">{percent}%</span>
+              </div>
+              <div
+                className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[#E4E6E3]"
+                role="progressbar"
+                aria-valuenow={percent}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-label={`Progresso do curso ${course.title}`}
+              >
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[#1F3864] to-[#6E9B1F] transition-all duration-700"
+                  style={{ width: `${percent}%` }}
+                />
+              </div>
+            </>
+          ) : (
+            <p className="text-xs font-semibold text-[#718096]">
+              Nenhuma aula cadastrada neste curso ainda.
+            </p>
+          )}
         </div>
       </div>
     </article>
